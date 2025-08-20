@@ -103,8 +103,8 @@ public function update(Request $request, CompanyInfo $companyInfo)
         $fileName = 'companyInfo_' . now()->format('YmdHis') . '.' . $fileExtension;
 
         // Save into /public/CompanyInfos (matches your existing approach)
-        $file->move(public_path('CompanyInfos'), $fileName);
-        $validated['logo'] = 'CompanyInfos/' . $fileName;
+        $file->move(public_path('companyInfo'), $fileName);
+        $validated['logo'] = 'companyInfo/' . $fileName;
 
         // (Recommended alternative)
         // $path = $file->store('company_infos', 'public'); // storage/app/public/company_infos
