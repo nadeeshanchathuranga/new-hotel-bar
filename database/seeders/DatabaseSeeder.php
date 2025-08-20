@@ -13,10 +13,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            CompanyInfoSeeder::class,
-            OwnerSeeder::class,
-        ]);
+
 
         if (!\App\Models\User::where('email', 'admin@admin.com')->exists()) {
     \App\Models\User::factory()->create([
