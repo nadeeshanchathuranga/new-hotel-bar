@@ -66,60 +66,59 @@ class CompanyInfoController extends Controller
 
 
 
-public function update(Request $request, CompanyInfo $companyInfo)
-{
-    if (!Gate::allows('hasRole', ['Admin'])) {
-        abort(403, 'Unauthorized');
-    }
-
-    // Base rules (no 'logo' yet)
-    $rules = [
-        'name'    => 'nullable|string|max:255',
-        'address' => 'nullable|string|max:255',
-        'phone'   => 'nullable|string|max:15',
-        'email'   => 'nullable|email|max:255',
-        'website' => 'nullable|url|max:255',
-    ];
-
-    // Only add the image rule if a file is actually uploaded
-    if ($request->hasFile('logo')) {
-        $rules['logo'] = 'image|mimes:jpg,jpeg,png,webp,gif|max:2048';
-    }
-
-    $validated = $request->validate($rules);
-
-    // Handle logo upload if present
-    if ($request->hasFile('logo')) {
-        // Delete old file (if you stored in public path previously)
-        if ($companyInfo->logo) {
-            $oldPath = public_path($companyInfo->logo);
-            if (File::exists($oldPath)) {
-                File::delete($oldPath);
-            }
+     public function update(Request $request, CompanyInfo $companyInfo)
+    {
+        if (! Gate::allows('hasRole', ['Admin'])) {
+            abort(403, 'Unauthorized');
         }
 
-        $file = $request->file('logo');
-        $fileExtension = $file->getClientOriginalExtension();
-        $fileName = 'companyInfo_' . now()->format('YmdHis') . '.' . $fileExtension;
+        // Validation (logo rule added only if present)
+        $rules = [
+            'name'    => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'phone'   => 'nullable|string|max:15',
+            'email'   => 'nullable|email|max:255',
+            'website' => 'nullable|url|max:255',
+        ];
+        if ($request->hasFile('logo')) {
+            $rules['logo'] = 'image|mimes:jpg,jpeg,png,webp,gif|max:2048';
+        }
 
-        // Save into /public/CompanyInfos (matches your existing approach)
-        $file->move(public_path('companyInfo'), $fileName);
-        $validated['logo'] = 'companyInfo/' . $fileName;
+        $validated = $request->validate($rules);
 
-        // (Recommended alternative)
-        // $path = $file->store('company_infos', 'public'); // storage/app/public/company_infos
-        // $validated['logo'] = 'storage/'.$path;
-    } else {
-        // Keep existing logo path if not uploading a new one
-        $validated['logo'] = $companyInfo->logo;
+
+        if ($request->hasFile('logo')) {
+
+            if ($companyInfo->logo) {
+
+                if (str_starts_with($companyInfo->logo, 'storage/')) {
+                    $oldRel = str_replace('storage/', '', $companyInfo->logo);
+                    Storage::disk('public')->delete($oldRel);
+                } else {
+
+                    $oldPublicPath = public_path($companyInfo->logo);
+                    if (File::exists($oldPublicPath)) {
+                        File::delete($oldPublicPath);
+                    }
+                }
+            }
+
+
+            $path = $request->file('logo')->store('company_info', 'public');
+
+
+            $validated['logo'] = 'storage/' . $path; //
+        } else {
+         
+            $validated['logo'] = $companyInfo->logo;
+        }
+
+        $companyInfo->update($validated);
+
+        return redirect()
+            ->route('companyInfo.index')
+            ->with('success', 'Company info updated successfully');
     }
-
-    $companyInfo->update($validated);
-
-    return redirect()->route('companyInfo.index')
-        ->with('banner', 'Company info updated successfully');
-}
-
 
 
     /**
