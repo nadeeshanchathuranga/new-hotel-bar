@@ -977,6 +977,75 @@ const refreshData = async () => {
   }
 };
 
+
+
+
+
+
+
+const removeProduct = (id) => {
+    if (!selectedTable.value) {
+        console.error("No table selected");
+        return;
+    }
+
+    const initialLength = selectedTable.value.products.length;
+    selectedTable.value.products = selectedTable.value.products.filter(
+        (item) => item.id !== id
+    );
+
+    if (selectedTable.value.products.length < initialLength) {
+        console.log(`Product with ID ${id} removed successfully.`);
+    } else {
+        console.warn(`Product with ID ${id} not found in the selected table.`);
+    }
+};
+
+const removeCoupon = () => {
+    appliedCoupon.value = null; // Clear the applied coupon
+    couponForm.code = ""; // Clear the coupon field
+};
+
+const incrementQuantity = (id) => {
+    if (!selectedTable.value) {
+        console.error("No table selected");
+        return;
+    }
+
+    const product = selectedTable.value.products.find((item) => item.id === id);
+    if (product) {
+        product.quantity += 1;
+    } else {
+        console.error(`Product with ID ${id} not found in the selected table.`);
+    }
+};
+
+const decrementQuantity = (id) => {
+    if (!selectedTable.value) {
+        console.error("No table selected");
+        return;
+    }
+
+    const product = selectedTable.value.products.find((item) => item.id === id);
+    if (product) {
+        if (product.quantity > 1) {
+            product.quantity -= 1;
+        } else {
+            console.warn(`Product quantity for ID ${id} is already at the minimum.`);
+        }
+    } else {
+        console.error(`Product with ID ${id} not found in the selected table.`);
+    }
+};
+
+
+
+
+
+
+
+
+
 const addTable = () => {
   const usedNumbers = tables.value.map((table) => table.number);
   let newNumber = 1;

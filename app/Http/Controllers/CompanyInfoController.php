@@ -65,46 +65,60 @@ class CompanyInfoController extends Controller
      */
 
 
+
 public function update(Request $request, CompanyInfo $companyInfo)
 {
     if (!Gate::allows('hasRole', ['Admin'])) {
         abort(403, 'Unauthorized');
     }
 
-    $validated = $request->validate([
-        'name' => 'nullable|string|max:255',
+    // Base rules (no 'logo' yet)
+    $rules = [
+        'name'    => 'nullable|string|max:255',
         'address' => 'nullable|string|max:255',
-        'phone' => 'nullable|string|max:15',
-        'email' => 'nullable|email|max:255',
+        'phone'   => 'nullable|string|max:15',
+        'email'   => 'nullable|email|max:255',
         'website' => 'nullable|url|max:255',
-        'logo' => 'nullable|image|max:2048', // Ensures it's an image
-    ]);
+    ];
 
+    // Only add the image rule if a file is actually uploaded
     if ($request->hasFile('logo')) {
-        // Delete old logo if it exists
-        $oldPath = public_path($companyInfo->logo);
-        if ($companyInfo->logo && File::exists($oldPath)) {
-            File::delete($oldPath);
+        $rules['logo'] = 'image|mimes:jpg,jpeg,png,webp,gif|max:2048';
+    }
+
+    $validated = $request->validate($rules);
+
+    // Handle logo upload if present
+    if ($request->hasFile('logo')) {
+        // Delete old file (if you stored in public path previously)
+        if ($companyInfo->logo) {
+            $oldPath = public_path($companyInfo->logo);
+            if (File::exists($oldPath)) {
+                File::delete($oldPath);
+            }
         }
 
-        // Save the new logo to public/CompanyInfos
         $file = $request->file('logo');
         $fileExtension = $file->getClientOriginalExtension();
-        $fileName = 'companyInfo_' . date("YmdHis") . '.' . $fileExtension;
+        $fileName = 'companyInfo_' . now()->format('YmdHis') . '.' . $fileExtension;
 
-        $file->move(public_path('CompanyInfos'), $fileName); // Save directly to public/
+        // Save into /public/CompanyInfos (matches your existing approach)
+        $file->move(public_path('CompanyInfos'), $fileName);
+        $validated['logo'] = 'CompanyInfos/' . $fileName;
 
-        $validated['logo'] = 'CompanyInfos/' . $fileName; // Relative public path
+        // (Recommended alternative)
+        // $path = $file->store('company_infos', 'public'); // storage/app/public/company_infos
+        // $validated['logo'] = 'storage/'.$path;
     } else {
+        // Keep existing logo path if not uploading a new one
         $validated['logo'] = $companyInfo->logo;
     }
 
     $companyInfo->update($validated);
 
     return redirect()->route('companyInfo.index')
-        ->banner('Company info updated successfully');
+        ->with('banner', 'Company info updated successfully');
 }
-
 
 
 

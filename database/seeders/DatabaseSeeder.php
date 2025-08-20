@@ -13,14 +13,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        $this->call([
+            CompanyInfoSeeder::class,
+            OwnerSeeder::class,
+        ]);
 
         if (!\App\Models\User::where('email', 'admin@admin.com')->exists()) {
     \App\Models\User::factory()->create([
         'name' => 'admin',
         'email' => 'admin@admin.com',
         'role_type' => 'Admin',
-        'password' => Hash::make('123456789'),
+        'password' => Hash::make('kandy23@admin'),
     ]);
 }
 
@@ -29,7 +32,7 @@ if (!\App\Models\User::where('email', 'manager@manager.com')->exists()) {
         'name' => 'manager',
         'email' => 'manager@manager.com',
         'role_type' => 'Manager',
-        'password' => Hash::make('gfcafe@manager'),
+        'password' => Hash::make('kandy23@manager'),
     ]);
 }
 
@@ -38,7 +41,7 @@ if (!\App\Models\User::where('email', 't1@cashier.com')->exists()) {
         'name' => 't1',
         'email' => 't1@cashier.com',
         'role_type' => 'Cashier',
-        'password' => Hash::make('gfcafe@t1'),
+        'password' => Hash::make('kandy23@t1'),
     ]);
 }
 

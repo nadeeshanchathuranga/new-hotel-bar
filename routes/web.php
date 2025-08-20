@@ -73,7 +73,7 @@ Route::middleware([
     Route::post('products-variant', [ProductController::class, 'productVariantStore'])->name('productVariant');
     // Route::resource('company-info', CompanyInfoController::class)->name('companyInfo.index');
     Route::get('/company-info', [CompanyInfoController::class, 'index'])->name('companyInfo.index');
-    Route::post('/company-info/{companyInfo}', [CompanyInfoController::class, 'update'])->name('companyInfo.update');
+    Route::put('/company-info/{companyInfo}', [CompanyInfoController::class, 'update'])->name('companyInfo.update');
 
 
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
