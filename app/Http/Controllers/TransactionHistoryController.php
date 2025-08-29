@@ -24,6 +24,8 @@ class TransactionHistoryController extends Controller
         }
 
         $allhistoryTransactions = $query->get();
+
+       
         $companyInfo1 = CompanyInfo::all();
 
         return Inertia::render('TransactionHistory/Index', [

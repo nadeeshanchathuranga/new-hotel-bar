@@ -83,52 +83,115 @@
             </div>
           </div>
 
-          <div class="flex flex-col w-full">
-            <div class="p-16 space-y-8 bg-black shadow-lg rounded-3xl">
-              <p class="mb-4 text-5xl font-bold text-white">Customer Details</p>
-              <div class="mb-3">
-                <input
-                  v-model="customer.name"
-                  type="text"
-                  placeholder="Enter Customer Name"
-                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div class="flex gap-2 mb-3 text-black">
-                <div class="relative w-full">
-                  <input
-                    v-model="customer.contactNumber"
-                    type="text"
-                    placeholder="Enter Customer Contact Number"
-                    class="w-full h-12 px-4 pr-16 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    @click="searchCustomer"
-                    class="absolute top-0 right-0 h-12 px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
-                  >
-                    Search
-                  </button>
-                </div>
-              </div>
-              <div class="text-black">
-                <input
-                  v-model="customer.email"
-                  type="email"
-                  placeholder="Enter Customer Email"
-                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+         <div class="flex flex-col w-full">
+  <div class="p-16 space-y-8 bg-black shadow-lg rounded-3xl">
+    <p class="mb-4 text-5xl font-bold text-white">Customer Details</p>
 
-              <div class="text-black">
-                <input
-                  v-model="customer.bdate"
-                  type="date"
-                  placeholder="Customer Birthdate"
-                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
+    <!-- Name -->
+    <div class="mb-3">
+      <label for="cust_name" class="block text-sm font-medium text-white mb-1">
+        Customer Name
+      </label>
+      <input
+        id="cust_name"
+        v-model.trim="customer.name"
+        type="text"
+        autocomplete="name"
+        placeholder="Enter Customer Name"
+        class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Contact + Search -->
+    <div class="mb-3 text-black">
+      <label for="cust_contact" class="block text-sm font-medium text-white mb-1">
+        Contact Number
+      </label>
+      <div class="relative w-full">
+        <input
+          id="cust_contact"
+          v-model="customer.contactNumber"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]{7,15}"
+          minlength="7"
+          maxlength="15"
+          autocomplete="tel"
+          placeholder="Enter Customer Contact Number"
+          class="w-full h-12 px-4 pr-16 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          @click="searchCustomer"
+          type="button"
+          aria-label="Search customer by contact"
+          class="absolute top-0 right-0 h-12 px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
+        >
+          Search
+        </button>
+      </div>
+      <p class="mt-1 text-xs text-gray-400">Enter 7–15 digits (no spaces)</p>
+    </div>
+
+    <!-- Email -->
+    <div class="text-black">
+      <label for="cust_email" class="block text-sm font-medium text-white mb-1">
+        Email
+      </label>
+      <input
+        id="cust_email"
+        v-model.trim="customer.email"
+        type="email"
+        inputmode="email"
+        autocomplete="email"
+        pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+        placeholder="Enter Customer Email"
+        class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Birthdate -->
+    <div class="text-black">
+      <label for="bdate" class="block text-sm font-medium text-white mb-1">
+        Birthdate
+      </label>
+      <input
+        id="bdate"
+        v-model="customer.bdate"
+        type="date"
+        autocomplete="bday"
+        placeholder="Customer Birthdate"
+        class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <!-- Employee / Cashier -->
+    <div class="text-black">
+      <label for="employee_id" class="block text-sm font-medium text-white mb-1">
+        Employee 
+      </label>
+      <select
+        id="employee_id"
+        v-model="employee_id"
+        class="w-full h-12 px-4 text-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Select Employee</option>
+        <option
+          v-for="emp in allemployee"
+          :key="emp.id"
+          :value="emp.id"
+        >
+          {{ emp.name }}<span v-if="emp.code"> ({{ emp.code }})</span>
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+          
         </div>
 
         <!-- Right: Bill -->

@@ -46,60 +46,64 @@
               <!-- Modal Form -->
               <div class="mt-6 space-y-4 text-left">
                 <!-- Category Name -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-300"
-                    >Category Name:</label
-                  >
-                  <select
-                    required
-                    v-model="form.category_id"
-                    id="parent_id"
-                    class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                  >
-                    <option value="">Select a Category</option>
-                    <option
-                      v-for="category in categories"
-                      :key="category.id"
-                      :value="category.id"
-                    >
-                      {{
-                        category.hierarchy_string
-                          ? category.hierarchy_string +
-                            " ----> " +
-                            category.name
-                          : category.name
-                      }}
-                    </option>
-                  </select>
-                  <span v-if="form.errors.name" class="mt-4 text-red-500">{{
-                    form.errors.name
-                  }}</span>
-                </div>
+                
 
-                <!-- <div>
-                  <label class="block text-sm font-medium text-gray-300"
-                    >Supplier Name:</label
-                  >
-                  <select
-                    v-model="form.supplier_id"
-                    id="parent_id"
-                    class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                  >
-                    <option value="">Select a Supplier</option>
-                    <option
-                      v-for="supplier in suppliers"
-                      :key="supplier.id"
-                      :value="supplier.id"
-                    >
-                      {{ supplier.name }}
-                    </option>
-                  </select>
-                  <span v-if="form.errors.name" class="mt-4 text-red-500">{{
-                    form.errors.name
-                  }}</span>
-                </div> -->
 
-                <!-- <div>
+
+                <!-- Left & Right layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Category (left) -->
+  <div>
+    <label for="category_id" class="block text-sm font-medium text-gray-300">
+      Category Name:
+    </label>
+    <select
+      id="category_id"
+      required
+      v-model="form.category_id"
+      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+    >
+      <option value="">Select a Category</option>
+      <option
+        v-for="category in categories"
+        :key="category.id"
+        :value="category.id"
+      >
+        {{ category.hierarchy_string ? category.hierarchy_string + ' ----> ' + category.name : category.name }}
+      </option>
+    </select>
+    <span v-if="form.errors.category_id" class="mt-2 block text-red-500">
+      {{ form.errors.category_id }}
+    </span>
+  </div>
+
+  <!-- Supplier (right) -->
+  <div>
+    <label for="supplier_id" class="block text-sm font-medium text-gray-300">
+      Supplier Name:
+    </label>
+    <select
+      id="supplier_id"
+      v-model="form.supplier_id"
+      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+    >
+      <option value="">Select a Supplier</option>
+      <option
+        v-for="supplier in suppliers"
+        :key="supplier.id"
+        :value="supplier.id"
+      >
+        {{ supplier.name }}
+      </option>
+    </select>
+    <span v-if="form.errors.supplier_id" class="mt-2 block text-red-500">
+      {{ form.errors.supplier_id }}
+    </span>
+  </div>
+</div>
+
+
+             <!-- <div>
                   <label class="block text-sm font-medium text-gray-300"
                     >Bar code:</label
                   >

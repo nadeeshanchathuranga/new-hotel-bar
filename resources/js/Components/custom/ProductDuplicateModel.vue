@@ -37,371 +37,264 @@
               >{{ form.name }} - Variation Set</DialogTitle
             >
             <form @submit.prevent="submit">
-              <!-- Modal Form -->
-              <div class="mt-6 space-y-4 text-left">
-                <div class="flex items-center gap-8 mt-6">
-                  <!-- Selling Price input -->
-                  <div class="w-full">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300"
-                        >Product Name:</label
-                      >
-                      <input
-                        v-model="form.name"
-                        type="text"
-                        id="name"
-                        required
-                        class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      />
-                      <span v-if="form.errors.name" class="mt-4 text-red-500">
-                        {{ form.errors.name }}</span
-                      >
-                    </div>
-                  </div>
-                  <!-- Cost Price input -->
-                </div>
+  <!-- Modal Form -->
+  <div class="mt-6 space-y-4 text-left">
 
-                <div class="flex items-center gap-8 mt-6">
-                  <!-- <div class="w-full">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300"
-                        >Product Code:</label
-                      >
-                      <input
-                        v-model="form.code"
-                        type="text"
-                        id="code"
-                        required
-                        class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      />
-                      <span v-if="form.errors.code" class="mt-4 text-red-500">{{
-                        form.errors.code
-                      }}</span>
-                    </div>
-                  </div> -->
-                  <!-- Cost Price input -->
-                  <div class="w-full">
-                    <!-- Category Name -->
-                    <div>
-                      <label class="block text-sm font-medium text-gray-300"
-                        >Category Name:</label
-                      >
-                      <select
-                        required
-                        v-model="form.category_id"
-                        id="parent_id"
-                        class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      >
-                        <option value="">Select a Category</option>
-                        <option
-                          v-for="category in categories"
-                          :key="category.id"
-                          :value="category.id"
-                        >
-                          {{
-                            category.hierarchy_string
-                              ? category.hierarchy_string +
-                                " ----> " +
-                                category.name
-                              : category.name
-                          }}
-                        </option>
-                      </select>
-                      <span v-if="form.errors.name" class="mt-4 text-red-500">{{
-                        form.errors.name
-                      }}</span>
-                    </div>
-                  </div>
-                </div>
+    <!-- Product Name & Category -->
+    <div class="flex items-center gap-8 mt-6">
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">
+          Product Name:
+        </label>
+        <input
+          v-model="form.name"
+          type="text"
+          id="name"
+          required
+          placeholder="Enter Product Name"
+          class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        />
+        <span v-if="form.errors.name" class="mt-2 text-red-500">
+          {{ form.errors.name }}
+        </span>
+      </div>
 
-                <div>
-                  <div class="flex items-center gap-8">
-                    <!-- First select box with label and error -->
-                    <div class="w-full">
-                      <label
-                        for="parent_id"
-                        class="block text-sm font-medium text-gray-300"
-                        >Size:</label
-                      >
-                      <select
-                        v-model="form.size_id"
-                        id="parent_id"
-                        class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      >
-                        <option value="">Select a Size</option>
-                        <option
-                          v-for="size in sizes"
-                          :key="size.id"
-                          :value="size.id"
-                        >
-                          {{ size.name }}
-                        </option>
-                      </select>
-                      <span
-                        v-if="form.errors.parent_id"
-                        class="mt-2 text-red-500"
-                      >
-                        {{ form.errors.parent_id }}
-                      </span>
-                    </div>
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">
+          Category Name:
+        </label>
+        <select
+          required
+          v-model="form.category_id"
+          id="category_id"
+          class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        >
+          <option value="">Select a Category</option>
+          <option
+            v-for="category in categories"
+            :key="category.id"
+            :value="category.id"
+          >
+            {{ category.hierarchy_string ? category.hierarchy_string + ' ----> ' + category.name : category.name }}
+          </option>
+        </select>
+        <span v-if="form.errors.category_id" class="mt-2 text-red-500">
+          {{ form.errors.category_id }}
+        </span>
+      </div>
+    </div>
 
-                    <!-- Second select box with label and error -->
-                    <div class="w-full">
-                      <label
-                        for="sub_id"
-                        class="block text-sm font-medium text-gray-300"
-                        >Base :</label
-                      >
-                      <select
-                        v-model="form.color_id"
-                        id="sub_id"
-                        class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      >
-                        <option value="">Select a Base</option>
-                        <option
-                          v-for="color in colors"
-                          :key="color.id"
-                          :value="color.id"
-                        >
-                          {{ color.name }}
-                        </option>
-                      </select>
-                      <span v-if="form.errors.sub_id" class="mt-2 text-red-500">
-                        {{ form.errors.sub_id }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+    <!-- Size & Base -->
+    <div class="flex items-center gap-8 mt-6">
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Size:</label>
+        <select
+          v-model="form.size_id"
+          id="size_id"
+          class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        >
+          <option value="">Select a Size</option>
+          <option v-for="size in sizes" :key="size.id" :value="size.id">
+            {{ size.name }}
+          </option>
+        </select>
+        <span v-if="form.errors.size_id" class="mt-2 text-red-500">
+          {{ form.errors.size_id }}
+        </span>
+      </div>
 
-                <div class="flex items-center gap-8 mt-6">
-                  <!-- Cost Price input -->
-                  <div class="w-full">
-                    <label
-                      for="cost_price"
-                      class="block text-sm font-medium text-gray-300"
-                      >Cost Price:</label
-                    >
-                    <input
-                      type="number"
-                      step="0.01"
-                      id="cost_price"
-                      v-model="form.cost_price"
-                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      placeholder="Enter cost price"
-                      required
-                    />
-                    <span
-                      v-if="form.errors.cost_price"
-                      class="mt-2 text-red-500"
-                    >
-                      {{ form.errors.cost_price }}
-                    </span>
-                  </div>
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Base:</label>
+        <select
+          v-model="form.color_id"
+          id="color_id"
+          class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        >
+          <option value="">Select a Base</option>
+          <option v-for="color in colors" :key="color.id" :value="color.id">
+            {{ color.name }}
+          </option>
+        </select>
+        <span v-if="form.errors.color_id" class="mt-2 text-red-500">
+          {{ form.errors.color_id }}
+        </span>
+      </div>
+    </div>
 
-                  <!-- Selling Price input -->
-                  <div class="w-full">
-                    <label
-                      for="selling_price"
-                      class="block text-sm font-medium text-gray-300"
-                      >Selling Price:</label
-                    >
-                    <input
-                      type="text"
-                      id="selling_price"
-                      v-model="form.selling_price"
-                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      placeholder="Enter selling price"
-                      @blur="updateDiscountedPrice"
-                      required
-                    />
-                    <span
-                      v-if="form.errors.selling_price"
-                      class="mt-2 text-red-500"
-                    >
-                      {{ form.errors.selling_price }}
-                    </span>
-                  </div>
-                </div>
+    <!-- Cost, Selling, Discount -->
+    <div class="flex items-center gap-8 mt-6">
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Cost Price:</label>
+        <input
+          type="number"
+          step="0.01"
+          v-model="form.cost_price"
+          id="cost_price"
+          placeholder="Enter cost price"
+          class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+          required
+        />
+        <span v-if="form.errors.cost_price" class="mt-2 text-red-500">
+          {{ form.errors.cost_price }}
+        </span>
+      </div>
 
-                <div class="flex items-center gap-8 mt-6">
-                  <!-- Cost Price input -->
-                  <div class="w-full">
-                    <label
-                      for="cost_price"
-                      class="block text-sm font-medium text-gray-300"
-                      >Discount (%):</label
-                    >
-                    <input
-                      type="text"
-                      id="discount"
-                      v-model="form.discount"
-                      @blur="updateDiscountedPrice"
-                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      placeholder="Enter discount percentage"
-                      min="0"
-                      max="100"
-                    />
-                    <span v-if="form.errors.discount" class="mt-2 text-red-500">
-                      {{ form.errors.discount }}
-                    </span>
-                  </div>
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Selling Price:</label>
+        <input
+          type="text"
+          v-model="form.selling_price"
+          id="selling_price"
+          @blur="updateDiscountedPrice"
+          placeholder="Enter selling price"
+          class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+          required
+        />
+        <span v-if="form.errors.selling_price" class="mt-2 text-red-500">
+          {{ form.errors.selling_price }}
+        </span>
+      </div>
+    </div>
 
-                  <!-- Selling Price input -->
-                  <div class="w-full">
-                    <label
-                      for="discounted_price"
-                      class="block text-sm font-medium text-gray-300"
-                    >
-                      Discounted Price:
-                    </label>
-                    <input
-                      type="text"
-                      id="discounted_price"
-                      v-model="form.discounted_price"
-                      @blur="updateDiscount"
-                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      placeholder="Discounted price will appear here"
-                    />
-                    <span
-                      v-if="form.errors.discounted_price"
-                      class="mt-2 text-red-500"
-                    >
-                      {{ form.errors.discounted_price }}
-                    </span>
-                  </div>
-                </div>
+    <div class="flex items-center gap-8 mt-6">
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Discount (%):</label>
+        <input
+          type="text"
+          id="discount"
+          v-model="form.discount"
+          @blur="updateDiscountedPrice"
+          placeholder="Enter discount percentage"
+          min="0"
+          max="100"
+          class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        />
+        <span v-if="form.errors.discount" class="mt-2 text-red-500">
+          {{ form.errors.discount }}
+        </span>
+      </div>
 
-                <div class="flex items-center gap-8 mt-6">
-                  <div class="w-full">
-                    <label
-                      for="stock_quantity"
-                      class="block text-sm font-medium text-gray-300"
-                      >Stock Quantity:</label
-                    >
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Discounted Price:</label>
+        <input
+          type="text"
+          v-model="form.discounted_price"
+          id="discounted_price"
+          @blur="updateDiscount"
+          placeholder="Discounted price"
+          class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        />
+        <span v-if="form.errors.discounted_price" class="mt-2 text-red-500">
+          {{ form.errors.discounted_price }}
+        </span>
+      </div>
+    </div>
 
-                    <input
-                      type="number"
-                      id="stock_quantity"
-                      v-model="form.stock_quantity"
-                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      placeholder="Stock quantity"
-                      required
-                    />
-                  </div>
+    <!-- Stock & Supplier -->
+    <div class="flex items-center gap-8 mt-6">
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Stock Quantity:</label>
+        <input
+          type="number"
+          v-model="form.stock_quantity"
+          id="stock_quantity"
+          placeholder="Enter stock quantity"
+          class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+          required
+        />
+        <span v-if="form.errors.stock_quantity" class="mt-2 text-red-500">
+          {{ form.errors.stock_quantity }}
+        </span>
+      </div>
 
-                  <!-- <div class="w-full">
-                    <label
-                      for="image"
-                      class="block text-sm font-medium text-gray-300"
-                      >Supplier Name :</label
-                    >
+      <div class="w-full">
+        <label class="block text-sm font-medium text-gray-300">Supplier:</label>
+        <select
+          v-model="form.supplier_id"
+          id="supplier_id"
+          class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        >
+          <option value="">Select a Supplier</option>
+          <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">
+            {{ supplier.name }}
+          </option>
+        </select>
+        <span v-if="form.errors.supplier_id" class="mt-2 text-red-500">
+          {{ form.errors.supplier_id }}
+        </span>
+      </div>
+    </div>
 
-                    <select
-                      v-model="form.supplier_id"
-                      id="supplier_id"
-                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                    >
-                      <option value="">Select a Supplier</option>
-                      <option
-                        v-for="supplier in suppliers"
-                        :key="supplier.id"
-                        :value="supplier.id"
-                      >
-                        {{ supplier.name }}
-                      </option>
-                    </select>
-                    <span v-if="form.errors.sub_id" class="mt-4 text-red-500">
-                      {{ form.errors.sub_id }}
-                    </span>
-                  </div> -->
-                </div>
+    <!-- Description -->
+    <div class="mt-6">
+      <label class="block text-sm font-medium text-gray-300">Description:</label>
+      <textarea
+        v-model="form.description"
+        id="description"
+        placeholder="Enter Description"
+        class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        rows="2"
+      ></textarea>
+      <span v-if="form.errors.description" class="mt-2 text-red-500">
+        {{ form.errors.description }}
+      </span>
+    </div>
 
-                <div class="flex items-center gap-8 mt-6">
-                  <div class="w-full">
-                    <label class="block text-sm font-medium text-gray-300">
-                      Description:
-                    </label>
-                    <textarea
-                      v-model="form.description"
-                      id="description"
-                      placeholder="Enter Description"
-                      class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                      rows="2"
-                    ></textarea>
-                    <span
-                      v-if="form.errors.description"
-                      class="mt-4 text-red-500"
-                    >
-                      {{ form.errors.description }}
-                    </span>
-                  </div>
-                </div>
+    <!-- Image Upload -->
+    <div class="flex items-center gap-8 mt-6">
+      <div class="w-full">
+        <label for="image" class="block text-sm font-medium text-gray-300">
+          Product Image:
+        </label>
 
-                <div class="flex items-center gap-8 mt-6">
-                  <div class="w-full">
-                    <label
-                      for="image"
-                      class="block text-sm font-medium text-gray-300"
-                      >Image:</label
-                    >
-                    <div class="w-full md:w-6/12">
-                      <label class="block text-sm font-medium text-white"
-                        >Current Image</label
-                      >
-                      <div class="mt-2">
-                        <img
-                          v-if="selectedProduct.image"
-                          :src="`/${selectedProduct.image}`"
-                          alt="Product Image"
-                          class="rounded-lg"
-                          style="width: 80px; height: 80px"
-                        />
+        <!-- Current Image Preview -->
+        <div class="w-full md:w-6/12 mt-2">
+          <label class="block text-sm font-medium text-white">Current Image</label>
+          <div class="mt-2">
+            <img
+              v-if="selectedProduct.image"
+              :src="`/${selectedProduct.image}`"
+              alt="Product Image"
+              class="rounded-lg"
+              style="width: 80px; height: 80px"
+            />
+            <p v-else class="text-sm text-gray-500">No image available</p>
+          </div>
+        </div>
 
-                        <p v-else class="text-sm text-gray-500">
-                          No image available
-                        </p>
-                      </div>
-                    </div>
-                    <input
-                      type="file"
-                      id="image"
-                      @change="handleImageUpload"
-                      class="w-full px-4 py-2 mt-2 text-white bg-gray-800 rounded-md focus:outline-none focus:ring focus:ring-blue-600"
-                    />
-                    <span v-if="form.errors.image" class="mt-2 text-red-500">
-                      {{ form.errors.image }}
-                    </span>
-                  </div>
-                </div>
-              </div>
+        <!-- Upload New -->
+        <input
+          type="file"
+          id="image"
+          @change="handleImageUpload"
+          class="w-full px-4 py-2 mt-2 text-white bg-gray-800 rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+        />
+        <span v-if="form.errors.image" class="mt-2 text-red-500">
+          {{ form.errors.image }}
+        </span>
+      </div>
+    </div>
+  </div>
 
-              <!-- Modal Buttons -->
-              <div class="mt-6 space-x-4">
-                <button
-                  class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
-                  type="submit"
-                  @click="
-                    () => {
-                      playClickSound();
-                    }
-                  "
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  class="px-4 py-2 text-gray-700 bg-gray-300 rounded hover:bg-gray-400"
-                  @click="
-                    () => {
-                      playClickSound();
-                      emit('update:open', false);
-                    }
-                  "
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+  <!-- Modal Buttons -->
+  <div class="mt-6 space-x-4">
+    <button
+      class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+      type="submit"
+      @click="() => { playClickSound(); }"
+    >
+      Save
+    </button>
+    <button
+      type="button"
+      class="px-4 py-2 text-gray-700 bg-gray-300 rounded hover:bg-gray-400"
+      @click="() => { playClickSound(); emit('update:open', false); }"
+    >
+      Cancel
+    </button>
+  </div>
+</form>
+
           </DialogPanel>
         </TransitionChild>
       </div>

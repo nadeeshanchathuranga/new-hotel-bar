@@ -64,7 +64,9 @@
                     v-model="form.contact"
                     type="text"
                     id="contact"
-                    required
+minlength="10"
+  maxlength="10"
+  pattern="[0-9]{10}"
                  oninput="this.value = this.value.replace(/[^0-9]/g, '');"
                     class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
                   />
@@ -82,7 +84,7 @@
                     v-model="form.email"
                     type="email"
                     id="email"
-                    required
+pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
                     class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
                   />
                   <span v-if="form.errors.email" class="mt-4 text-red-500">
@@ -99,7 +101,7 @@
                     v-model="form.address"
                     type="text"
                     id="address"
-                    required
+
                     class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
                   />
                   <span v-if="form.errors.address" class="mt-4 text-red-500">
@@ -255,9 +257,9 @@ watch(
   (newValue) => {
     if (newValue) {
       form.name = newValue.name || "";
-      form.contact = newValue.contact || "";
-      form.email = newValue.email || "";
-      form.address = newValue.address || "";
+      form.contact = newValue.contact || null;
+      form.email = newValue.email || null;
+      form.address = newValue.address || null;
       form.image = null;
     } else {
       form.reset(); // Reset form if no supplier selected

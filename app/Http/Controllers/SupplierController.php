@@ -39,12 +39,15 @@ class SupplierController extends Controller
             abort(403, 'Unauthorized');
         }
 
+
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'contact' => 'required|string|max:20',
-            'email' => 'required|email|max:255|unique:suppliers,email',
-            'address' => 'required|string|max:500',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    'name'    => ['required', 'string', 'max:255'],
+    'contact' => ['nullable', 'string', 'max:30'],
+    'email'   => ['nullable', 'email:rfc,dns'],
+    'address' => ['nullable', 'string', 'max:255'],
+    'image'   => ['nullable', 'image', 'max:2048'], // 2MB
+
         ]);
 
 
@@ -63,7 +66,7 @@ class SupplierController extends Controller
             $path = $request->file('image')->storeAs('suppliers', $fileName, 'public');
             $validated['image'] = 'storage/' . $path;
         }
-
+ 
         Supplier::create($validated);
 
         return redirect()->route('suppliers.index')->banner('Supplier created successfully.');

@@ -148,6 +148,8 @@ class PosController extends Controller
     public function submit(Request $request)
     {
 
+
+ 
         if (!Gate::allows('hasRole', ['Admin', 'Cashier'])) {
             abort(403, 'Unauthorized');
         }
@@ -221,7 +223,7 @@ class PosController extends Controller
                 'customer_id' => $customer ? $customer->id : null, // Nullable customer_id
                 'employee_id' => $request->input('employee_id'),
                 'user_id' => $request->input('userId'), // Logged-in user ID
-                'order_id' => $request->input('orderid'),
+                'order_id' => $request->input('orderId'),
                 'total_amount' => $totalAmount, // Total amount of the sale
                 'discount' => $totalDiscount, // Default discount to 0 if not provided
                 'total_cost' => $totalCost,

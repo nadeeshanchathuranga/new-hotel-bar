@@ -19,15 +19,12 @@ class StockTransaction extends Model
 
      // Relationships
      public function product()
-     {
-        //  return $this->belongsTo(Product::class, 'product_id','id');
-         return $this->belongsTo(Product::class)->withTrashed();
-     }
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
 
-     public function supplier()
-     {
-
-        return $this->belongsTo(Supplier::class)->withTrashed();
-
-     }
+    public function supplier()
+{
+    return $this->belongsTo(Supplier::class, 'supplier_id');
+}
 }
