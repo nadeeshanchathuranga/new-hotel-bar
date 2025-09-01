@@ -38,7 +38,7 @@
                 <div class="mt-6 space-y-4 text-left">
                   <div>
                     <label class="block text-sm font-medium text-gray-300">
-                      Service charge :
+                      Service charge (%):
                     </label>
                     <input
                       v-model="form.service_charge"

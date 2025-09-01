@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Size;
+use App\Models\ServiceCharge;
 use App\Models\StockTransaction;
 use App\Models\Employee;
 use Illuminate\Http\Request;
@@ -38,6 +39,11 @@ class PosController extends Controller
         });
         $colors = Color::orderBy('created_at', 'desc')->get();
         $sizes = Size::orderBy('created_at', 'desc')->get();
+        $serviceCharge = ServiceCharge::orderBy('created_at', 'desc')->get();
+
+
+
+
         $allemployee = Employee::orderBy('created_at', 'desc')->get();
 
         // NEW: Owners with current-month discount (or latest fallback)
@@ -70,6 +76,7 @@ class PosController extends Controller
             'colors'        => $colors,
             'sizes'         => $sizes,
             'owners'        => $owners,
+            'serviceCharge' => $serviceCharge,
         ]);
     }
 
@@ -149,7 +156,7 @@ class PosController extends Controller
     {
 
 
- 
+
         if (!Gate::allows('hasRole', ['Admin', 'Cashier'])) {
             abort(403, 'Unauthorized');
         }

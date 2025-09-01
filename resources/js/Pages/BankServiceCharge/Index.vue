@@ -33,7 +33,7 @@
             <thead>
               <tr class="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white text-[16px] border-b border-blue-700">
                 <th class="p-4 font-semibold tracking-wide uppercase">#</th>
-                <th class="p-4 font-semibold tracking-wide uppercase">Charge</th>
+                <th class="p-4 font-semibold tracking-wide uppercase">Charge (%)</th>
                   <th class="p-4 font-semibold tracking-wide uppercase">Default</th>
                 <th class="p-4 font-semibold tracking-wide uppercase">Actions</th>
 
