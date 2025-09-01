@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
         'name' => 'admin',
         'email' => 'admin@admin.com',
         'role_type' => 'Admin',
-        'password' => Hash::make('kandy23@admin'),
+        'password' => Hash::make('Tukadmin@2025'),
     ]);
 }
 
@@ -29,16 +29,16 @@ if (!\App\Models\User::where('email', 'manager@manager.com')->exists()) {
         'name' => 'manager',
         'email' => 'manager@manager.com',
         'role_type' => 'Manager',
-        'password' => Hash::make('kandy23@manager'),
+        'password' => Hash::make('Tukmanager@2025'),
     ]);
 }
 
 if (!\App\Models\User::where('email', 't1@cashier.com')->exists()) {
     \App\Models\User::factory()->create([
-        'name' => 't1',
+        'name' => 'cashier',
         'email' => 't1@cashier.com',
         'role_type' => 'Cashier',
-        'password' => Hash::make('kandy23@t1'),
+        'password' => Hash::make('Tukcashier@2025'),
     ]);
 }
 
