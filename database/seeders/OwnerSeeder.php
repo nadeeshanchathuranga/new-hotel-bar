@@ -13,10 +13,10 @@ class OwnerSeeder extends Seeder
     {
         // Owners list
         $ownersData = [
-            ['name' => 'John Doe',      'code' => 'OWN-001'],
-            ['name' => 'Jane Smith',    'code' => 'OWN-002'],
-            ['name' => 'Michael Lee',   'code' => 'OWN-003'],
-            ['name' => 'Sarah Connor',  'code' => 'OWN-004'],
+            ['name' => 'Ayodhya Wijethunga',      'code' => 'OWN-001'],
+            ['name' => 'Kasun Dissanayaka',    'code' => 'OWN-002'],
+            ['name' => 'Shashika Meegoda',   'code' => 'OWN-003'],
+            ['name' => 'Buddika Katudeniya',  'code' => 'OWN-004'],
         ];
 
         // Insert or update owners by code
