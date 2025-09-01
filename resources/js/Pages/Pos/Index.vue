@@ -1623,9 +1623,10 @@ const receiptHTML = `
       body {
         margin: 0;
         padding: 0;
-        font-size: 12px;
-        font-family: 'Courier New', monospace;
+        font-size: 14px;
+       font-family: 'Courier New', monospace;
         line-height: 1.4;
+        color: #000;
       }
 
       .ticket {
@@ -1638,7 +1639,7 @@ const receiptHTML = `
       h1 {
         text-align: center;
         margin: 0 0 10px 0;
-        font-size: 16px;
+        font-size: 20px;
         font-weight: bold;
         border-bottom: 2px solid #000;
         padding-bottom: 5px;
@@ -1654,7 +1655,7 @@ const receiptHTML = `
         display: flex;
         justify-content: space-between;
         margin: 3px 0;
-        font-size: 11px;
+        font-size: 12px;
       }
 
       table {
@@ -1665,11 +1666,11 @@ const receiptHTML = `
       }
 
       th {
-        background: #f0f0f0;
+
         text-align: left;
         padding: 6px;
         border-bottom: 1px solid #000;
-        font-size: 11px;
+        font-size: 12px;
       }
 
       th:last-child {
@@ -1698,7 +1699,7 @@ const receiptHTML = `
         padding: 6px;
         margin: 10px 0;
         font-weight: bold;
-        background: #fffacd;
+
         font-size: 11px;
       }
 
