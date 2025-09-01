@@ -320,24 +320,6 @@
                 <p class="text-xl">( {{ totalDiscount }} LKR )</p>
               </div>
 
-              <!-- <div class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black">
-                <p class="text-xl text-black">Custom Discount</p>
-                <span class="flex items-center">
-                  <CurrencyInput
-                    v-model="selectedTable.custom_discount"
-                    placeholder="Enter value"
-                    class="rounded-md px-2 py-1 text-black text-md"
-                  />
-                  <select
-                    v-model="selectedTable.custom_discount_type"
-                    class="ml-2 px-8 border-black rounded-md text-black py-1 text-md"
-                  >
-                    <option value="percent">%</option>
-                    <option value="fixed">Rs</option>
-                  </select>
-                </span>
-              </div> -->
-
               <div
                 v-if="selectedTable.order_type === 'pickup'"
                 class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
@@ -357,7 +339,6 @@
                 v-if="selectedTable && selectedTable.id !== 'default' && selectedTable.order_type !== 'pickup'"
                 class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
               >
-                <!-- FIX: use snake_case property everywhere -->
                 <select
                   v-model="selectedTable.service_charge"
                   class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
@@ -733,6 +714,52 @@ const props = defineProps({
   serviceCharge: Array,
   owners: Array,
 });
+
+/* =========================
+   KOT DAILY SEQUENCE HELPERS (ADDED)
+   - Stores {date:'YYYY-MM-DD', seq:N} in localStorage
+   - Resets at local midnight automatically
+========================= */
+const KOT_SEQUENCE_KEY = "kotDailySequence";
+
+const toDateKey = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const getKotSeqState = () => {
+  try {
+    const raw = localStorage.getItem(KOT_SEQUENCE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveKotSeqState = (state) => {
+  localStorage.setItem(KOT_SEQUENCE_KEY, JSON.stringify(state));
+};
+
+const getNextKotNumberForToday = () => {
+  const today = toDateKey();
+  const state = getKotSeqState();
+  if (!state || state.date !== today) {
+    const fresh = { date: today, seq: 1 };
+    saveKotSeqState(fresh);
+    return 1;
+    }
+  const next = (Number(state.seq) || 0) + 1;
+  saveKotSeqState({ date: today, seq: next });
+  return next;
+};
+
+const getCurrentKotNumber = () => {
+  const state = getKotSeqState();
+  const today = toDateKey();
+  return state && state.date === today ? Number(state.seq) || 0 : 0;
+};
 
 /* =========================
    STATE
@@ -1520,7 +1547,7 @@ const isKOTDisabled = (table) => {
 };
 
 /* =========================
-   TABLE KOT PRINT (updated to record snapshot)
+   TABLE KOT PRINT (UPDATED with daily sequence + note on top)
 ========================= */
 const sendKOT = (table) => {
   try {
@@ -1543,6 +1570,12 @@ const sendKOT = (table) => {
       return;
     }
 
+    // NEW: Daily KOT number (resets at midnight)
+    const kotNo = getNextKotNumberForToday();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString();
+    const timeStr = now.toLocaleTimeString();
+
     const productRows = deltas
       .map((d) => `
         <tr>
@@ -1558,6 +1591,10 @@ const sendKOT = (table) => {
         : table.order_type === "pickup"
         ? "Delivery"
         : "Dine In";
+
+    const noteBlock = table.kitchen_note
+      ? `<div class="note"><b>Kitchen Note:</b> ${table.kitchen_note}</div>`
+      : "";
 
     const receiptHTML = `
       <!doctype html>
@@ -1576,19 +1613,25 @@ const sendKOT = (table) => {
             th { text-align:left; }
             td { text-align:right; }
             td:first-child { text-align:left; }
-            .note { border-top:1px solid #000; border-bottom:1px solid #000; padding:8px 0; margin-top:10px; font-weight:bold; }
+            .note { border:1px dashed #000; padding:8px; margin:10px 0; font-weight:bold; }
+            .kot-head { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+            .kot-head .cell { padding:4px 6px; }
           </style>
         </head>
         <body>
-          <h1>KOT Note</h1>
-          <div class="badge">Table: ${table.number - 1} • Order Type: ${orderType}</div>
-          <div class="row">
-            <div><b>Date:</b> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-            <div><b>Order No:</b> ${table.orderId}</div>
+          <h1>KOT Note - (${String(kotNo).padStart(3,'0')} )<small></h1>
+
+          <div class="kot-head">
+
+            <div class="cell"><b>Order No:</b> ${table.orderId}</div>
+            <div class="cell"><b>Table:</b> ${table.number - 1}</div>
+            <div class="cell"><b>Type:</b> ${orderType}</div>
+            <div class="cell"><b>Date:</b> ${dateStr}</div>
+            <div class="cell"><b>Time:</b> ${timeStr}</div>
+            <div class="cell"><b>Cashier:</b> ${props.loggedInUser?.name ?? ""}</div>
           </div>
-          <div class="row">
-            <div><b>Cashier:</b> ${props.loggedInUser?.name ?? ""}</div>
-          </div>
+
+          ${noteBlock}
 
           <table>
             <thead>
@@ -1601,12 +1644,6 @@ const sendKOT = (table) => {
               ${productRows}
             </tbody>
           </table>
-
-          ${
-            table.kitchen_note
-              ? `<div class="note">Note: ${table.kitchen_note}</div>`
-              : ""
-          }
         </body>
       </html>
     `;
@@ -1625,7 +1662,7 @@ const sendKOT = (table) => {
       w.print();
       w.close();
 
-      // mark as sent AFTER print trigger and save snapshot
+      // mark as sent AFTER print + save snapshot
       table.kotStatus = "sent";
       table.lastKotSnapshot = getKotSnapshot(table);
       localStorage.setItem("tables", JSON.stringify(tables.value));

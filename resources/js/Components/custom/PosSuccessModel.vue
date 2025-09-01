@@ -327,8 +327,7 @@ const handlePrintReceipt = () => {
     companyInfo?.value?.phone ||
     companyInfo?.value?.phone2 ||
     companyInfo?.value?.email
-      ? `<p>${companyInfo.value.phone || ""} | ${
-          companyInfo.value.phone2 || ""
+      ? `<p>${companyInfo.value.phone || ""} |  0704364943 
         }  ${companyInfo.value.email || ""}</p>`
       : ""
   }
