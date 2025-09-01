@@ -28,47 +28,53 @@
       <div class="flex w-full gap-4">
         <!-- Left: Tables + Customer -->
         <div class="flex flex-col w-1/2">
-          <div class="p-8 w-full border-4 border-black rounded-3xl mb-8">
+          <div class="p-6 w-full border-4 border-black rounded-3xl mb-8">
             <!-- Header -->
-            <div class="flex items-center justify-between p-4">
+            <div class="flex items-center justify-between pb-4">
               <h1 class="text-xl font-bold">
-                <span class="text-3xl font-bold tracking-wide text-black mb-4">Tables</span>
+                <span class="text-3xl font-bold tracking-wide text-black">Tables</span>
               </h1>
-              <!-- Removed: Add More Tables button (fixed 25 tables) -->
             </div>
 
-            <!-- Tables -->
-            <div class="grid grid-cols-4 gap-4">
+            <!-- Live Bill shown separately -->
+            <div
+              :class="[
+                'w-full flex flex-col justify-center items-center rounded-xl px-3 py-4 border border-[#2563EB] text-center mb-3',
+                (selectedTable && tables[0] && tables[0].id === selectedTable.id) ? 'bg-blue-100' : 'hover:bg-blue-50',
+              ]"
+              @click="selectTable(tables[0])"
+            >
+              <div class="text-xl text-black font-bold">Live Bill</div>
+            </div>
+
+            <!-- exactly 25 tables (5 x 5) -->
+            <div class="grid grid-cols-5 gap-3">
               <div
-                v-for="(table, index) in tables"
+                v-for="table in tables.slice(1, 26)"
                 :key="table.id"
                 :class="[
-                  'w-full flex flex-col justify-center items-center rounded-xl px-2 py-6 border border-[#2563EB] text-center',
-                  // Blue = currently selected table
+                  'w-full flex flex-col justify-center items-center rounded-xl px-2 py-4 border border-[#2563EB] text-center',
                   (selectedTable && table.id === selectedTable.id) ? 'bg-blue-100'
-                    // Yellow = has items but not confirmed yet
-                    : (table.id !== 'default' && table.products && table.products.length > 0 ? 'bg-yellow-100' : ''),
+                    : (table.products && table.products.length > 0 ? 'bg-yellow-100' : ''),
                   'hover:bg-blue-50',
                 ]"
                 @click="selectTable(table)"
               >
-                <div v-if="table.id === 'default'" class="text-2xl text-black font-bold">
-                  Live Bill
+                <div class="text-lg text-black font-bold">Table</div>
+                <div class="text-4xl text-black font-bold">
+                  {{ table.number - 1 }}
                 </div>
-                <div v-else>
-                  <!-- Removed: close/✖ button (tiles are fixed) -->
-                  <div class="text-2xl text-black font-bold">Table</div>
-                  <div class="text-6xl text-black font-bold">
-                    {{ table.number - 1 }}
-                  </div>
 
-                  <button
-                    @click.stop="sendKOT(table)"
-                    class="mt-4 px-4 py-2 bg-green-600 tracking-wide text-white text-lg font-semibold rounded-lg hover:bg-green-700"
-                  >
-                    KOT
-                  </button>
-                </div>
+                <button
+                  @click.stop="sendKOT(table)"
+                  :disabled="isKOTDisabled(table)"
+                  :class="[
+                    'mt-2 px-3 py-1 tracking-wide text-white text-sm font-semibold rounded-lg',
+                    isKOTDisabled(table) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                  ]"
+                >
+                  {{ table.kotStatus === 'sent' ? 'KOT Sent' : 'KOT' }}
+                </button>
               </div>
             </div>
           </div>
@@ -314,7 +320,7 @@
                 <p class="text-xl">( {{ totalDiscount }} LKR )</p>
               </div>
 
-              <div class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black">
+              <!-- <div class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black">
                 <p class="text-xl text-black">Custom Discount</p>
                 <span class="flex items-center">
                   <CurrencyInput
@@ -330,7 +336,7 @@
                     <option value="fixed">Rs</option>
                   </select>
                 </span>
-              </div>
+              </div> -->
 
               <div
                 v-if="selectedTable.order_type === 'pickup'"
@@ -351,8 +357,9 @@
                 v-if="selectedTable && selectedTable.id !== 'default' && selectedTable.order_type !== 'pickup'"
                 class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
               >
+                <!-- FIX: use snake_case property everywhere -->
                 <select
-                  v-model="selectedTable.serviceCharge"
+                  v-model="selectedTable.service_charge"
                   class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
                 >
                   <option value="">Select Service Charge</option>
@@ -779,6 +786,7 @@ const savedTables = JSON.parse(localStorage.getItem("tables")) || [
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
+    lastKotSnapshot: null, // snapshot of last sent KOT quantities
   },
 ];
 
@@ -808,7 +816,10 @@ const seedFixedTables = () => {
       delivery_charge: "",
       service_charge: "",
       bank_service_charge: "",
+      lastKotSnapshot: null,
     };
+  } else if (!('lastKotSnapshot' in def)) {
+    def.lastKotSnapshot = null;
   }
 
   // Map existing non-default by number
@@ -818,7 +829,10 @@ const seedFixedTables = () => {
   const stable = [def];
   for (let n = 2; n <= 26; n++) {
     if (byNum.has(n)) {
-      stable.push(byNum.get(n));
+      const t = byNum.get(n);
+      if (!('kotStatus' in t)) t.kotStatus = "pending"; // normalize
+      if (!('lastKotSnapshot' in t)) t.lastKotSnapshot = null;
+      stable.push(t);
     } else {
       stable.push({
         id: `t${n}`,
@@ -835,6 +849,7 @@ const seedFixedTables = () => {
         service_charge: "",
         bank_service_charge: "",
         kotStatus: "pending",
+        lastKotSnapshot: null,
       });
     }
   }
@@ -867,6 +882,22 @@ watch(
   selectedTable,
   (newSelectedTable) => {
     localStorage.setItem("selectedTable", JSON.stringify(newSelectedTable));
+  },
+  { deep: true }
+);
+
+/* === Re-enable KOT whenever items on the current table change === */
+watch(
+  () => selectedTable.value?.products,
+  () => {
+    const t = selectedTable.value;
+    if (!t || t.id === "default") return;
+    if (!Array.isArray(t.products)) return;
+    // Any change after a send should allow sending KOT again
+    if (t.kotStatus === "sent") {
+      t.kotStatus = "pending";
+      localStorage.setItem("tables", JSON.stringify(tables.value));
+    }
   },
   { deep: true }
 );
@@ -1033,6 +1064,7 @@ const refreshData = async () => {
       service_charge: "",
       bank_service_charge: "",
       owner_discount_value: "",
+      lastKotSnapshot: null,
     };
 
     selectedTable.value = defaultTable;
@@ -1147,6 +1179,7 @@ const removeSelectedTable = () => {
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
+    lastKotSnapshot: null,
   };
 
   tables.value[idx] = cleared;
@@ -1184,7 +1217,7 @@ const submitOrder = async () => {
   }
 
   try {
-    const response = await axios.post("/pos/submit", {
+    await axios.post("/pos/submit", {
       customer: customer.value,
       products: selectedTable.value.products,
       employee_id: employee_id.value,
@@ -1201,7 +1234,6 @@ const submitOrder = async () => {
       bank_service_charge: selectedTable.value.bank_service_charge,
       order_type: selectedTable.value.order_type,
       total: total.value,
-
       owner_id: ownerForm.owner_id || null,
       owner_discount_value: ownerDiscountValue.value,
       owner_override_amount: ownerFetch.value.override_amount || 0,
@@ -1431,6 +1463,183 @@ const handleSelectedProducts = (selectedProducts) => {
   });
 };
 
+/* =========================
+   KOT HELPERS (Snapshot-based)
+========================= */
+/** Build a plain { [productId]: qty } snapshot for a table */
+const getKotSnapshot = (table) => {
+  if (!table || !Array.isArray(table.products)) return {};
+  const snap = {};
+  table.products.forEach(p => {
+    snap[p.id] = Number(p.quantity) || 0;
+  });
+  return snap;
+};
+
+/** Return items that increased since the last KOT */
+const getKotDelta = (table) => {
+  if (!table) return [];
+  const prev = table.lastKotSnapshot || {};
+  const curr = getKotSnapshot(table);
+  const deltas = [];
+  (table.products || []).forEach(p => {
+    const before = Number(prev[p.id] || 0);
+    const now = Number(curr[p.id] || 0);
+    const diff = now - before;
+    if (diff > 0) {
+      deltas.push({ id: p.id, name: p.name, delta: diff });
+    }
+  });
+  return deltas;
+};
+
+/** Return true if there are changes vs. last sent snapshot */
+const hasKotChanges = (table) => {
+  const snap = table?.lastKotSnapshot || null;
+  const curr = getKotSnapshot(table);
+  const currKeys = Object.keys(curr);
+  if (!snap) {
+    // No snapshot => if there are products, consider it as "changes present"
+    return currKeys.length > 0;
+  }
+  const snapKeys = Object.keys(snap);
+  if (snapKeys.length !== currKeys.length) return true;
+  for (const k of currKeys) {
+    if (!(k in snap)) return true;
+    if (Number(curr[k]) !== Number(snap[k])) return true;
+  }
+  return false;
+};
+
+/* === KOT enable/disable helper (updated) === */
+const isKOTDisabled = (table) => {
+  if (!table || table.id === "default") return true;
+  if (!table.products || table.products.length === 0) return true;
+  // Enable only when at least one item's quantity increased
+  return getKotDelta(table).length === 0;
+};
+
+/* =========================
+   TABLE KOT PRINT (updated to record snapshot)
+========================= */
+const sendKOT = (table) => {
+  try {
+    if (!table || table.id === "default") {
+      isAlertModalOpen.value = true;
+      message.value = "Select a table to print KOT.";
+      return;
+    }
+    if (!table.products || table.products.length === 0) {
+      isAlertModalOpen.value = true;
+      message.value = "No items to send to kitchen for this table.";
+      return;
+    }
+
+    // Only print increased items since last KOT
+    const deltas = getKotDelta(table);
+    if (deltas.length === 0) {
+      isAlertModalOpen.value = true;
+      message.value = "No increased items to send to kitchen.";
+      return;
+    }
+
+    const productRows = deltas
+      .map((d) => `
+        <tr>
+          <td>${d.name}</td>
+          <td style="text-align:center;">${d.delta}</td>
+        </tr>
+      `)
+      .join("");
+
+    const orderType =
+      table.order_type === "takeaway"
+        ? "Takeaway"
+        : table.order_type === "pickup"
+        ? "Delivery"
+        : "Dine In";
+
+    const receiptHTML = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>KOT</title>
+          <style>
+            @media print { body { margin:0; padding:0; -webkit-print-color-adjust: exact; } }
+            body { background:#fff; font-size:12px; font-family:Arial,sans-serif; margin:0; padding:10px; color:#000; }
+            h1 { text-align:center; margin:0 0 10px 0; }
+            .row { display:flex; justify-content:space-between; margin:6px 0; }
+            .badge { border:1px solid #000; padding:4px 6px; text-align:center; margin:8px 0; font-weight:bold; }
+            table { width:100%; border-collapse:collapse; margin-top:8px; }
+            th, td { padding:6px 8px; }
+            th { text-align:left; }
+            td { text-align:right; }
+            td:first-child { text-align:left; }
+            .note { border-top:1px solid #000; border-bottom:1px solid #000; padding:8px 0; margin-top:10px; font-weight:bold; }
+          </style>
+        </head>
+        <body>
+          <h1>KOT Note</h1>
+          <div class="badge">Table: ${table.number - 1} • Order Type: ${orderType}</div>
+          <div class="row">
+            <div><b>Date:</b> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+            <div><b>Order No:</b> ${table.orderId}</div>
+          </div>
+          <div class="row">
+            <div><b>Cashier:</b> ${props.loggedInUser?.name ?? ""}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th style="text-align:center;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productRows}
+            </tbody>
+          </table>
+
+          ${
+            table.kitchen_note
+              ? `<div class="note">Note: ${table.kitchen_note}</div>`
+              : ""
+          }
+        </body>
+      </html>
+    `;
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      isAlertModalOpen.value = true;
+      message.value = "Popup blocked. Allow popups to print KOT.";
+      return;
+    }
+    w.document.open();
+    w.document.write(receiptHTML);
+    w.document.close();
+    w.onload = () => {
+      w.focus();
+      w.print();
+      w.close();
+
+      // mark as sent AFTER print trigger and save snapshot
+      table.kotStatus = "sent";
+      table.lastKotSnapshot = getKotSnapshot(table);
+      localStorage.setItem("tables", JSON.stringify(tables.value));
+    };
+  } catch (err) {
+    isAlertModalOpen.value = true;
+    message.value = "Failed to print KOT.";
+    console.error("KOT print error:", err?.message || err);
+  }
+};
+
+/* =========================
+   CUSTOMER SEARCH
+========================= */
 const searchCustomer = async () => {
   let contact = customer.value.contactNumber;
   customer.value = {
