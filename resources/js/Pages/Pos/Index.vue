@@ -1598,8 +1598,6 @@ const sendKOT = (table) => {
 
 
 
-
-
 const receiptHTML = `
 <!doctype html>
 <html>
@@ -1620,13 +1618,18 @@ const receiptHTML = `
         }
       }
 
-      body {
+      /* 🔥 Burn print effect: all text bold & black */
+      body,
+      .ticket,
+      .ticket * {
         margin: 0;
         padding: 0;
+        font-family: 'Courier New', monospace;
         font-size: 14px;
-       font-family: 'Courier New', monospace;
-        line-height: 1.4;
-        color: #000;
+        font-weight: bold;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
 
       .ticket {
@@ -1639,14 +1642,13 @@ const receiptHTML = `
       h1 {
         text-align: center;
         margin: 0 0 10px 0;
-        font-size: 20px;
-        font-weight: bold;
+        font-size: 24px;
         border-bottom: 2px solid #000;
         padding-bottom: 5px;
       }
 
       .kot-head {
-        border: 1px solid #000;
+        border: 2px solid #000;
         padding: 6px;
         margin-bottom: 10px;
       }
@@ -1662,14 +1664,13 @@ const receiptHTML = `
         width: 100%;
         border-collapse: collapse;
         margin-top: 8px;
-        border: 1px solid #000;
+        border: 2px solid #000;
       }
 
       th {
-
         text-align: left;
         padding: 6px;
-        border-bottom: 1px solid #000;
+        border-bottom: 2px solid #000;
         font-size: 12px;
       }
 
@@ -1680,34 +1681,30 @@ const receiptHTML = `
 
       td {
         padding: 6px;
-        font-size: 11px;
-        border-bottom: 1px dashed #ccc;
+        font-size: 12px;
+        border-bottom: 1px dashed #000;
       }
 
       td:first-child {
-        font-weight: bold;
         text-align: left;
       }
 
       td:last-child {
         text-align: center;
-        font-weight: bold;
       }
 
       .note {
         border: 2px dashed #000;
         padding: 6px;
         margin: 10px 0;
-        font-weight: bold;
-
-        font-size: 11px;
+        font-size: 12px;
       }
 
       .footer {
         text-align: center;
         margin-top: 15px;
-        font-size: 10px;
-        border-top: 1px solid #000;
+        font-size: 11px;
+        border-top: 2px solid #000;
         padding-top: 6px;
       }
     </style>
@@ -1753,11 +1750,6 @@ const receiptHTML = `
   </body>
 </html>
 `;
-
-
-
-
-
 
 
 
