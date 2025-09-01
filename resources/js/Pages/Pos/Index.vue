@@ -34,14 +34,7 @@
               <h1 class="text-xl font-bold">
                 <span class="text-3xl font-bold tracking-wide text-black mb-4">Tables</span>
               </h1>
-              <!-- Add More Tables Button -->
-              <button
-                @click="addTable"
-                class="flex items-center px-4 py-2 bg-blue-600 tracking-wide text-white text-xl font-semibold rounded-lg hover:bg-blue-700"
-              >
-                <p><i class="pr-4 ri-add-circle-fill"></i></p>
-                Add More Tables
-              </button>
+              <!-- Removed: Add More Tables button (fixed 25 tables) -->
             </div>
 
             <!-- Tables -->
@@ -51,8 +44,11 @@
                 :key="table.id"
                 :class="[
                   'w-full flex flex-col justify-center items-center rounded-xl px-2 py-6 border border-[#2563EB] text-center',
-                  table.id === selectedTable.id ? 'bg-blue-100' : '',
-                  'hover:bg-blue-100',
+                  // Blue = currently selected table
+                  (selectedTable && table.id === selectedTable.id) ? 'bg-blue-100'
+                    // Yellow = has items but not confirmed yet
+                    : (table.id !== 'default' && table.products && table.products.length > 0 ? 'bg-yellow-100' : ''),
+                  'hover:bg-blue-50',
                 ]"
                 @click="selectTable(table)"
               >
@@ -60,13 +56,7 @@
                   Live Bill
                 </div>
                 <div v-else>
-                  <button
-                    v-if="table.id !== 'default'"
-                    @click.stop="removeTable(index)"
-                    class="text-3xl text-red-500 hover:text-red-700"
-                  >
-                    ✖
-                  </button>
+                  <!-- Removed: close/✖ button (tiles are fixed) -->
                   <div class="text-2xl text-black font-bold">Table</div>
                   <div class="text-6xl text-black font-bold">
                     {{ table.number - 1 }}
@@ -83,115 +73,110 @@
             </div>
           </div>
 
-         <div class="flex flex-col w-full">
-  <div class="p-16 space-y-8 bg-black shadow-lg rounded-3xl">
-    <p class="mb-4 text-5xl font-bold text-white">Customer Details</p>
+          <!-- Customer -->
+          <div class="flex flex-col w-full">
+            <div class="p-16 space-y-8 bg-black shadow-lg rounded-3xl">
+              <p class="mb-4 text-5xl font-bold text-white">Customer Details</p>
 
-    <!-- Name -->
-    <div class="mb-3">
-      <label for="cust_name" class="block text-sm font-medium text-white mb-1">
-        Customer Name
-      </label>
-      <input
-        id="cust_name"
-        v-model.trim="customer.name"
-        type="text"
-        autocomplete="name"
-        placeholder="Enter Customer Name"
-        class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
+              <!-- Name -->
+              <div class="mb-3">
+                <label for="cust_name" class="block text-sm font-medium text-white mb-1">
+                  Customer Name
+                </label>
+                <input
+                  id="cust_name"
+                  v-model.trim="customer.name"
+                  type="text"
+                  autocomplete="name"
+                  placeholder="Enter Customer Name"
+                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-    <!-- Contact + Search -->
-    <div class="mb-3 text-black">
-      <label for="cust_contact" class="block text-sm font-medium text-white mb-1">
-        Contact Number
-      </label>
-      <div class="relative w-full">
-        <input
-          id="cust_contact"
-          v-model="customer.contactNumber"
-          type="text"
-          inputmode="numeric"
-          pattern="[0-9]{7,15}"
-          minlength="7"
-          maxlength="15"
-          autocomplete="tel"
-          placeholder="Enter Customer Contact Number"
-          class="w-full h-12 px-4 pr-16 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          @click="searchCustomer"
-          type="button"
-          aria-label="Search customer by contact"
-          class="absolute top-0 right-0 h-12 px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
-        >
-          Search
-        </button>
-      </div>
-      <p class="mt-1 text-xs text-gray-400">Enter 7–15 digits (no spaces)</p>
-    </div>
+              <!-- Contact + Search -->
+              <div class="mb-3 text-black">
+                <label for="cust_contact" class="block text-sm font-medium text-white mb-1">
+                  Contact Number
+                </label>
+                <div class="relative w-full">
+                  <input
+                    id="cust_contact"
+                    v-model="customer.contactNumber"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]{7,15}"
+                    minlength="7"
+                    maxlength="15"
+                    autocomplete="tel"
+                    placeholder="Enter Customer Contact Number"
+                    class="w-full h-12 px-4 pr-16 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    @click="searchCustomer"
+                    type="button"
+                    aria-label="Search customer by contact"
+                    class="absolute top-0 right-0 h-12 px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
+                  >
+                    Search
+                  </button>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">Enter 7–15 digits (no spaces)</p>
+              </div>
 
-    <!-- Email -->
-    <div class="text-black">
-      <label for="cust_email" class="block text-sm font-medium text-white mb-1">
-        Email
-      </label>
-      <input
-        id="cust_email"
-        v-model.trim="customer.email"
-        type="email"
-        inputmode="email"
-        autocomplete="email"
-        pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-        placeholder="Enter Customer Email"
-        class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
+              <!-- Email -->
+              <div class="text-black">
+                <label for="cust_email" class="block text-sm font-medium text-white mb-1">
+                  Email
+                </label>
+                <input
+                  id="cust_email"
+                  v-model.trim="customer.email"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                  placeholder="Enter Customer Email"
+                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-    <!-- Birthdate -->
-    <div class="text-black">
-      <label for="bdate" class="block text-sm font-medium text-white mb-1">
-        Birthdate
-      </label>
-      <input
-        id="bdate"
-        v-model="customer.bdate"
-        type="date"
-        autocomplete="bday"
-        placeholder="Customer Birthdate"
-        class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
+              <!-- Birthdate -->
+              <div class="text-black">
+                <label for="bdate" class="block text-sm font-medium text-white mb-1">
+                  Birthdate
+                </label>
+                <input
+                  id="bdate"
+                  v-model="customer.bdate"
+                  type="date"
+                  autocomplete="bday"
+                  placeholder="Customer Birthdate"
+                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-    <!-- Employee / Cashier -->
-    <div class="text-black">
-      <label for="employee_id" class="block text-sm font-medium text-white mb-1">
-        Employee 
-      </label>
-      <select
-        id="employee_id"
-        v-model="employee_id"
-        class="w-full h-12 px-4 text-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="">Select Employee</option>
-        <option
-          v-for="emp in allemployee"
-          :key="emp.id"
-          :value="emp.id"
-        >
-          {{ emp.name }}<span v-if="emp.code"> ({{ emp.code }})</span>
-        </option>
-      </select>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-          
+              <!-- Employee / Cashier -->
+              <div class="text-black">
+                <label for="employee_id" class="block text-sm font-medium text-white mb-1">
+                  Employee 
+                </label>
+                <select
+                  id="employee_id"
+                  v-model="employee_id"
+                  class="w-full h-12 px-4 text-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Employee</option>
+                  <option
+                    v-for="emp in allemployee"
+                    :key="emp.id"
+                    :value="emp.id"
+                  >
+                    {{ emp.name }}<span v-if="emp.code"> ({{ emp.code }})</span>
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right: Bill -->
@@ -464,175 +449,160 @@
               </div>
             </div>
 
+            <!-- Owner Discount -->
+            <div class="w-full my-5">
+              <div class="flex flex-col gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg font-semibold text-gray-900">Owner Discount</h3>
+                  <span
+                    v-if="ownerDiscountApplied"
+                    class="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200"
+                  >
+                    <i class="ri-check-line mr-1"></i> Applied
+                  </span>
+                </div>
 
+                <div class="flex items-end gap-3">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+                    <select
+                      v-model="ownerForm.owner_id"
+                      class="w-full h-11 px-3 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select Owner</option>
+                      <option v-for="o in owners" :key="o.id" :value="o.id">
+                        {{ o.name }} ({{ o.code }})
+                      </option>
+                    </select>
+                    <p v-if="ownerCodeValue" class="mt-1 text-xs text-gray-500">
+                      Code: <span class="font-medium">{{ ownerCodeValue }}</span>
+                    </p>
+                  </div>
 
+                  <button
+                    type="button"
+                    @click="fetchOwnerDiscount"
+                    :disabled="!ownerForm.owner_id"
+                    class="h-11 px-5 rounded-lg font-semibold text-white transition
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           bg-blue-600 hover:bg-blue-700"
+                  >
+                    Fetch
+                  </button>
+                </div>
 
-<!-- Owner Discount -->
-<div class="w-full my-5">
-  <div class="flex flex-col gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm">
+                <div
+                  v-if="ownerFetch.owner_id"
+                  class="rounded-xl border border-gray-100 bg-gray-50 p-4"
+                >
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="flex flex-col">
+                      <span class="text-xs text-gray-500">Monthly Allocation</span>
+                      <span class="text-base font-semibold text-gray-900">
+                        {{ Number(ownerFetch.discount_value || 0).toFixed(2) }} LKR
+                      </span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs text-gray-500">Used This Month</span>
+                      <span class="text-base font-semibold text-gray-900">
+                        {{ Number(ownerFetch.current_discount || 0).toFixed(2) }} LKR
+                      </span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs text-gray-500">Remaining</span>
+                      <span class="text-base font-semibold text-blue-700">
+                        {{ ownerBalance.toFixed(2) }} LKR
+                      </span>
+                    </div>
+                  </div>
 
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">Owner Discount</h3>
-      <span
-        v-if="ownerDiscountApplied"
-        class="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200"
-      >
-        <i class="ri-check-line mr-1"></i> Applied
-      </span>
-    </div>
+                  <div class="mt-3">
+                    <div class="h-2 w-full bg-white border border-gray-200 rounded-full overflow-hidden">
+                      <div
+                        class="h-2 bg-blue-500"
+                        :style="{ width: Math.min(100, Math.round(((ownerFetch.current_discount || 0) / (ownerFetch.discount_value || 1)) * 100)) + '%'}"
+                      ></div>
+                    </div>
+                    <div class="mt-1.5 flex justify-between text-[11px] text-gray-500">
+                      <span>0</span>
+                      <span>{{ Number(ownerFetch.discount_value || 0).toFixed(0) }}</span>
+                    </div>
+                  </div>
 
-    <!-- Owner select + fetch -->
-    <div class="flex items-end gap-3">
-      <div class="flex-1">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-        <select
-          v-model="ownerForm.owner_id"
-          class="w-full h-11 px-3 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">Select Owner</option>
-          <option v-for="o in owners" :key="o.id" :value="o.id">
-            {{ o.name }} ({{ o.code }})
-          </option>
-        </select>
-        <p v-if="ownerCodeValue" class="mt-1 text-xs text-gray-500">
-          Code: <span class="font-medium">{{ ownerCodeValue }}</span>
-        </p>
-      </div>
+                  <p
+                    v-if="!ownerFetch.available && ownerFetch.message"
+                    class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg"
+                  >
+                    <i class="ri-alert-line mr-1"></i>{{ ownerFetch.message }}
+                  </p>
 
-      <button
-        type="button"
-        @click="fetchOwnerDiscount"
-        :disabled="!ownerForm.owner_id"
-        class="h-11 px-5 rounded-lg font-semibold text-white transition
-               disabled:opacity-50 disabled:cursor-not-allowed
-               bg-blue-600 hover:bg-blue-700"
-      >
-        Fetch
-      </button>
-    </div>
+                  <div class="mt-3 flex items-center gap-3">
+                    <button
+                      v-if="!ownerDiscountApplied"
+                      @click="applyOwnerDiscount"
+                      :disabled="!ownerFetch.available || ownerBalance <= 0"
+                      class="h-10 px-4 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Apply Owner Discount
+                    </button>
 
-    <!-- Fetched summary -->
-    <div
-      v-if="ownerFetch.owner_id"
-      class="rounded-xl border border-gray-100 bg-gray-50 p-4"
-    >
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="flex flex-col">
-          <span class="text-xs text-gray-500">Monthly Allocation</span>
-          <span class="text-base font-semibold text-gray-900">
-            {{ Number(ownerFetch.discount_value || 0).toFixed(2) }} LKR
-          </span>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs text-gray-500">Used This Month</span>
-          <span class="text-base font-semibold text-gray-900">
-            {{ Number(ownerFetch.current_discount || 0).toFixed(2) }} LKR
-          </span>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs text-gray-500">Remaining</span>
-          <span class="text-base font-semibold text-blue-700">
-            {{ ownerBalance.toFixed(2) }} LKR
-          </span>
-        </div>
-      </div>
+                    <button
+                      v-else
+                      @click="removeOwnerDiscount"
+                      class="h-10 px-4 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700"
+                    >
+                      Remove Owner Discount
+                    </button>
+                  </div>
+                </div>
 
-      <!-- Progress bar -->
-      <div class="mt-3">
-        <div class="h-2 w-full bg-white border border-gray-200 rounded-full overflow-hidden">
-          <div
-            class="h-2 bg-blue-500"
-            :style="{ width: Math.min(100, Math.round(((ownerFetch.current_discount || 0) / (ownerFetch.discount_value || 1)) * 100)) + '%'}"
-          ></div>
-        </div>
-        <div class="mt-1.5 flex justify-between text-[11px] text-gray-500">
-          <span>0</span>
-          <span>{{ Number(ownerFetch.discount_value || 0).toFixed(0) }}</span>
-        </div>
-      </div>
+                <div v-if="ownerDiscountApplied" class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <label class="text-sm font-medium text-gray-700">Override value (LKR)</label>
 
-      <!-- Availability / note -->
-      <p
-        v-if="!ownerFetch.available && ownerFetch.message"
-        class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg"
-      >
-        <i class="ri-alert-line mr-1"></i>{{ ownerFetch.message }}
-      </p>
+                  <div class="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      :max="ownerBalance"
+                      v-model.number="ownerFetch.override_amount"
+                      class="w-44 h-11 px-3 border border-gray-300 rounded-lg text-black bg-white
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                    />
+                    <button
+                      type="button"
+                      @click="ownerFetch.override_amount = ownerBalance"
+                      class="h-11 px-3 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                    >
+                      Use Max
+                    </button>
+                  </div>
 
-      <!-- Apply / Remove buttons -->
-      <div class="mt-3 flex items-center gap-3">
-        <button
-          v-if="!ownerDiscountApplied"
-          @click="applyOwnerDiscount"
-          :disabled="!ownerFetch.available || ownerBalance <= 0"
-          class="h-10 px-4 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700
-                 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Apply Owner Discount
-        </button>
+                  <div class="sm:ml-auto text-sm">
+                    <span class="text-gray-600">
+                      Remaining:
+                      <span class="font-semibold">{{ ownerBalance.toFixed(2) }} LKR</span>
+                    </span>
+                    <span class="mx-2 text-gray-300">•</span>
+                    <span
+                      :class="[
+                        'font-semibold',
+                        Number(ownerFetch.override_amount || 0) > ownerBalance ? 'text-red-600' : 'text-green-700'
+                      ]"
+                    >
+                      Override: {{ Number(ownerFetch.override_amount || 0).toFixed(2) }} LKR
+                    </span>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                      Tip: you can’t exceed the remaining amount. Click <span class="font-medium">Use Max</span> to auto-fill.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <button
-          v-else
-          @click="removeOwnerDiscount"
-          class="h-10 px-4 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700"
-        >
-          Remove Owner Discount
-        </button>
-      </div>
-    </div>
-
-    <!-- Override input (only when applied) -->
-    <div v-if="ownerDiscountApplied" class="flex flex-col sm:flex-row sm:items-center gap-3">
-      <label class="text-sm font-medium text-gray-700">Override value (LKR)</label>
-
-      <div class="flex items-center gap-2">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          :max="ownerBalance"
-          v-model.number="ownerFetch.override_amount"
-          class="w-44 h-11 px-3 border border-gray-300 rounded-lg text-black bg-white
-                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="0.00"
-        />
-        <button
-          type="button"
-          @click="ownerFetch.override_amount = ownerBalance"
-          class="h-11 px-3 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
-        >
-          Use Max
-        </button>
-      </div>
-
-      <div class="sm:ml-auto text-sm">
-        <span class="text-gray-600">
-          Remaining:
-          <span class="font-semibold">{{ ownerBalance.toFixed(2) }} LKR</span>
-        </span>
-        <span class="mx-2 text-gray-300">•</span>
-        <span
-          :class="[
-            'font-semibold',
-            Number(ownerFetch.override_amount || 0) > ownerBalance ? 'text-red-600' : 'text-green-700'
-          ]"
-        >
-          Override: {{ Number(ownerFetch.override_amount || 0).toFixed(2) }} LKR
-        </span>
-        <p class="text-xs text-gray-500 mt-0.5">
-          Tip: you can’t exceed the remaining amount. Click <span class="font-medium">Use Max</span> to auto-fill.
-        </p>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-
-
-
-
+            <!-- Kitchen Note -->
             <div class="w-full my-1">
               <div class="relative flex items-center">
                 <input
@@ -798,7 +768,7 @@ const filteredBanks = computed(() =>
 const savedTables = JSON.parse(localStorage.getItem("tables")) || [
   {
     id: "default",
-    number: 1,
+    number: 1, // Live Bill
     orderId: generateOrderId(),
     products: [],
     balance: 0,
@@ -818,6 +788,68 @@ const savedSelectedTable = JSON.parse(localStorage.getItem("selectedTable")) || 
 const tables = ref(savedTables);
 const nextTableNumber = ref(savedNextTableNumber);
 const selectedTable = ref(savedSelectedTable);
+
+/* === Seed fixed Live Bill + tables 1..25 (numbers 2..26 internally) === */
+const seedFixedTables = () => {
+  // Make sure Live Bill exists
+  let def = tables.value.find(t => t.id === "default");
+  if (!def) {
+    def = {
+      id: "default",
+      number: 1,
+      orderId: generateOrderId(),
+      products: [],
+      cash: 0.0,
+      balance: 0.0,
+      custom_discount: 0.0,
+      custom_discount_type: "percent",
+      kitchen_note: "",
+      order_type: "",
+      delivery_charge: "",
+      service_charge: "",
+      bank_service_charge: "",
+    };
+  }
+
+  // Map existing non-default by number
+  const byNum = new Map();
+  tables.value.filter(t => t.id !== "default").forEach(t => byNum.set(t.number, t));
+
+  const stable = [def];
+  for (let n = 2; n <= 26; n++) {
+    if (byNum.has(n)) {
+      stable.push(byNum.get(n));
+    } else {
+      stable.push({
+        id: `t${n}`,
+        number: n,              // displays as n-1 => 1..25
+        orderId: generateOrderId(),
+        products: [],
+        cash: 0.0,
+        balance: 0.0,
+        custom_discount: 0.0,
+        custom_discount_type: "percent",
+        kitchen_note: "",
+        order_type: "",
+        delivery_charge: "",
+        service_charge: "",
+        bank_service_charge: "",
+        kotStatus: "pending",
+      });
+    }
+  }
+  tables.value = stable;
+
+  // Ensure a valid selection
+  if (!selectedTable.value || !tables.value.find(t => t.id === selectedTable.value.id)) {
+    selectedTable.value = tables.value[0];
+  }
+};
+
+onMounted(() => {
+  seedFixedTables();
+  document.addEventListener("keypress", handleScannerInput);
+});
 
 watch(
   tables,
@@ -1040,83 +1072,70 @@ const refreshData = async () => {
   }
 };
 
-
-
-
-
-
-
 const removeProduct = (id) => {
-    if (!selectedTable.value) {
-        console.error("No table selected");
-        return;
-    }
-
-    const initialLength = selectedTable.value.products.length;
-    selectedTable.value.products = selectedTable.value.products.filter(
-        (item) => item.id !== id
-    );
-
-    if (selectedTable.value.products.length < initialLength) {
-        console.log(`Product with ID ${id} removed successfully.`);
-    } else {
-        console.warn(`Product with ID ${id} not found in the selected table.`);
-    }
+  if (!selectedTable.value) {
+    console.error("No table selected");
+    return;
+  }
+  const initialLength = selectedTable.value.products.length;
+  selectedTable.value.products = selectedTable.value.products.filter(
+    (item) => item.id !== id
+  );
+  if (selectedTable.value.products.length < initialLength) {
+    console.log(`Product with ID ${id} removed successfully.`);
+  } else {
+    console.warn(`Product with ID ${id} not found in the selected table.`);
+  }
 };
 
 const removeCoupon = () => {
-    appliedCoupon.value = null; // Clear the applied coupon
-    couponForm.code = ""; // Clear the coupon field
+  appliedCoupon.value = null;
+  couponForm.code = "";
 };
 
 const incrementQuantity = (id) => {
-    if (!selectedTable.value) {
-        console.error("No table selected");
-        return;
-    }
-
-    const product = selectedTable.value.products.find((item) => item.id === id);
-    if (product) {
-        product.quantity += 1;
-    } else {
-        console.error(`Product with ID ${id} not found in the selected table.`);
-    }
+  if (!selectedTable.value) {
+    console.error("No table selected");
+    return;
+  }
+  const product = selectedTable.value.products.find((item) => item.id === id);
+  if (product) product.quantity += 1;
 };
 
 const decrementQuantity = (id) => {
-    if (!selectedTable.value) {
-        console.error("No table selected");
-        return;
-    }
-
-    const product = selectedTable.value.products.find((item) => item.id === id);
-    if (product) {
-        if (product.quantity > 1) {
-            product.quantity -= 1;
-        } else {
-            console.warn(`Product quantity for ID ${id} is already at the minimum.`);
-        }
-    } else {
-        console.error(`Product with ID ${id} not found in the selected table.`);
-    }
+  if (!selectedTable.value) {
+    console.error("No table selected");
+    return;
+  }
+  const product = selectedTable.value.products.find((item) => item.id === id);
+  if (product) {
+    if (product.quantity > 1) product.quantity -= 1;
+    else console.warn(`Product quantity for ID ${id} is already at the minimum.`);
+  }
 };
 
-
-
-
-
-
-
-
-
 const addTable = () => {
-  const usedNumbers = tables.value.map((table) => table.number);
-  let newNumber = 1;
-  while (usedNumbers.includes(newNumber)) newNumber++;
+  // kept for compatibility; UI no longer shows the button
+};
 
-  const newTable = {
-    id: Date.now(),
-    number: newNumber,
+const selectTable = (table) => {
+  selectedTable.value = table;
+};
+
+const removeTable = (index) => {
+  // kept for compatibility; tiles are fixed and not removed in UI
+  const removedTable = tables.value[index];
+  localStorage.setItem(`removedTable_${removedTable.number}`, JSON.stringify(removedTable));
+};
+
+/* Clear (do not delete) the currently selected table after confirm */
+const removeSelectedTable = () => {
+  if (!selectedTable.value) return;
+  const idx = tables.value.findIndex((table) => table.id === selectedTable.value.id);
+
+  // Reset the selected table in place
+  const cleared = {
+    ...tables.value[idx],
     orderId: generateOrderId(),
     products: [],
     cash: 0.0,
@@ -1128,66 +1147,19 @@ const addTable = () => {
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
-    kotStatus: "pending",
   };
 
-  tables.value.push(newTable);
-  selectedTable.value = newTable;
-
-  localStorage.removeItem(`removedTable_${newNumber}`);
-};
-
-const selectTable = (table) => {
-  selectedTable.value = table;
-};
-
-const removeTable = (index) => {
-  const removedTable = tables.value.splice(index, 1)[0];
-
-  if (tables.value.length > 0) {
-    selectedTable.value = tables.value[tables.value.length - 1];
-  } else {
-    selectedTable.value = null;
-  }
-
-  localStorage.setItem(`removedTable_${removedTable.number}`, JSON.stringify(removedTable));
-};
-
-const removeSelectedTable = () => {
-  if (!selectedTable.value) return;
-
-  const index = tables.value.findIndex((table) => table.id === selectedTable.value.id);
-
-  if (selectedTable.value.id === "default") {
-    selectedTable.value = {
-      id: "default",
-      number: 1,
-      orderId: generateOrderId(),
-      products: [],
-      cash: 0.0,
-      balance: 0.0,
-      custom_discount: 0.0,
-      custom_discount_type: "percent",
-      kitchen_note: "",
-      order_type: "",
-      delivery_charge: "",
-      service_charge: "",
-      bank_service_charge: "",
-    };
-    tables.value[index] = selectedTable.value;
-    return;
-  }
-
-  if (index === -1) return;
-
-  tables.value.splice(index, 1);
-  selectedTable.value = tables.value.length > 0 ? tables.value[Math.min(index, tables.value.length - 1)] : null;
+  tables.value[idx] = cleared;
+  selectedTable.value = cleared;
 };
 
 const handleModalOpenUpdate = (newValue) => {
   isSuccessModalOpen.value = newValue;
   if (!newValue) {
+    // Clear current table and move selection to Live Bill to remove blue highlight
     removeSelectedTable();
+    seedFixedTables();
+    selectedTable.value = tables.value[0]; // Live Bill
     cash.value = 0;
     refreshData();
   }
@@ -1231,8 +1203,8 @@ const submitOrder = async () => {
       total: total.value,
 
       owner_id: ownerForm.owner_id || null,
-      owner_discount_value: ownerDiscountValue.value,       // applied discount (override)
-      owner_override_amount: ownerFetch.value.override_amount || 0, // also send explicitly
+      owner_discount_value: ownerDiscountValue.value,
+      owner_override_amount: ownerFetch.value.override_amount || 0,
     });
 
     isSuccessModalOpen.value = true;
