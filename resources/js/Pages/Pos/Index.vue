@@ -1625,7 +1625,7 @@ const receiptHTML = `
         margin: 0;
         padding: 0;
         font-family: 'Courier New', monospace;
-        font-size: 14px;
+
         font-weight: bold;
         color: #000 !important;
         -webkit-print-color-adjust: exact;
