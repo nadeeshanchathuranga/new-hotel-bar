@@ -61,12 +61,12 @@
               >
                 Print Receipt
               </p>
-              <p
+              <!-- <p
                 @click="handleKOTPrintReceipt"
                 class="cursor-pointer bg-orange-600 text-white font-bold uppercase tracking-wider px-4 shadow-xl   py-4 rounded-xl"
               >
                 KOT Receipt
-              </p>
+              </p> -->
 
 
               <p
