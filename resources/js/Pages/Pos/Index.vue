@@ -1619,7 +1619,7 @@ const sendKOT = (table) => {
           </style>
         </head>
         <body>
-          <h1>KOT Note - (${String(kotNo).padStart(3,'0')} )<small></h1>
+          <h1>KOT Note - (${String(kotNo).padStart(3,'0')})<small></h1>
 
           <div class="kot-head">
 
