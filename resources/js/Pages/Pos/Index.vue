@@ -164,7 +164,7 @@
               <!-- Employee / Cashier -->
               <div class="text-black">
                 <label for="employee_id" class="block text-sm font-medium text-white mb-1">
-                  Employee 
+                  Employee
                 </label>
                 <select
                   id="employee_id"
@@ -1596,57 +1596,173 @@ const sendKOT = (table) => {
       ? `<div class="note"><b>Kitchen Note:</b> ${table.kitchen_note}</div>`
       : "";
 
-    const receiptHTML = `
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>KOT</title>
-          <style>
-            @media print { body { margin:0; padding:0; -webkit-print-color-adjust: exact; } }
-            body { background:#fff; font-size:12px; font-family:Arial,sans-serif; margin:0; padding:10px; color:#000; }
-            h1 { text-align:center; margin:0 0 10px 0; }
-            .row { display:flex; justify-content:space-between; margin:6px 0; }
-            .badge { border:1px solid #000; padding:4px 6px; text-align:center; margin:8px 0; font-weight:bold; }
-            table { width:100%; border-collapse:collapse; margin-top:8px; }
-            th, td { padding:6px 8px; }
-            th { text-align:left; }
-            td { text-align:right; }
-            td:first-child { text-align:left; }
-            .note { border:1px dashed #000; padding:8px; margin:10px 0; font-weight:bold; }
-            .kot-head { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-            .kot-head .cell { padding:4px 6px; }
-          </style>
-        </head>
-        <body>
-          <h1>KOT Note - (${String(kotNo).padStart(3,'0')})<small></h1>
 
-          <div class="kot-head">
 
-            <div class="cell"><b>Order No:</b> ${table.orderId}</div>
-            <div class="cell"><b>Table:</b> ${table.number - 1}</div>
-            <div class="cell"><b>Type:</b> ${orderType}</div>
-            <div class="cell"><b>Date:</b> ${dateStr}</div>
-            <div class="cell"><b>Time:</b> ${timeStr}</div>
-            <div class="cell"><b>Cashier:</b> ${props.loggedInUser?.name ?? ""}</div>
-          </div>
 
-          ${noteBlock}
 
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th style="text-align:center;">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${productRows}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
+const receiptHTML = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>KOT - ${String(kotNo).padStart(3,'0')}</title>
+    <style>
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        @page {
+          size: 80mm auto;   /* <-- Thermal 80mm */
+          margin: 0;         /* remove browser default margin */
+        }
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+        line-height: 1.4;
+      }
+
+      .ticket {
+        width: 80mm;   /* <-- fixed width */
+        max-width: 80mm;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+
+      h1 {
+        text-align: center;
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: bold;
+        border-bottom: 2px solid #000;
+        padding-bottom: 5px;
+      }
+
+      .kot-head {
+        border: 1px solid #000;
+        padding: 6px;
+        margin-bottom: 10px;
+      }
+
+      .kot-head .row {
+        display: flex;
+        justify-content: space-between;
+        margin: 3px 0;
+        font-size: 11px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        border: 1px solid #000;
+      }
+
+      th {
+        background: #f0f0f0;
+        text-align: left;
+        padding: 6px;
+        border-bottom: 1px solid #000;
+        font-size: 11px;
+      }
+
+      th:last-child {
+        text-align: center;
+        width: 40px;
+      }
+
+      td {
+        padding: 6px;
+        font-size: 11px;
+        border-bottom: 1px dashed #ccc;
+      }
+
+      td:first-child {
+        font-weight: bold;
+        text-align: left;
+      }
+
+      td:last-child {
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .note {
+        border: 2px dashed #000;
+        padding: 6px;
+        margin: 10px 0;
+        font-weight: bold;
+        background: #fffacd;
+        font-size: 11px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 10px;
+        border-top: 1px solid #000;
+        padding-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ticket">
+      <h1>🍽️ KOT Note - (${String(kotNo).padStart(3,'0')})</h1>
+
+      <div class="kot-head">
+        <div class="row">
+          <span><b>Date:</b> ${dateStr}</span>
+          <span><b>Time:</b> ${timeStr}</span>
+        </div>
+        <div class="row">
+          <span><b>Order No:</b> ${table.orderId}</span>
+          <span><b>Table:</b> ${table.number}</span>
+        </div>
+        <div class="row">
+          <span><b>Type:</b> ${orderType}</span>
+          <span><b>Cashier:</b> ${props.loggedInUser?.name ?? "N/A"}</span>
+        </div>
+      </div>
+
+      ${noteBlock}
+
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productRows}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <p><strong>Kitchen Copy</strong></p>
+        <p>Please prepare items as ordered</p>
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
+
+
+
+
+
+
+
+
+
+
 
     const w = window.open("", "_blank");
     if (!w) {
