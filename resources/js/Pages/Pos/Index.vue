@@ -1596,15 +1596,16 @@ const sendKOT = (table) => {
       ? `<div class="note"><b>Kitchen Note:</b> ${table.kitchen_note}</div>`
       : "";
 
-
-
-const receiptHTML = `
-<!doctype html>
+    const receiptHTML = `
+      <!doctype html>
+     
+      <!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>KOT - ${String(kotNo).padStart(3,'0')}</title>
+    <title>KOT</title>
     <style>
+      /* ---------- PRINT ---------- */
       @media print {
         body {
           margin: 0;
@@ -1613,148 +1614,138 @@ const receiptHTML = `
           print-color-adjust: exact;
         }
         @page {
-          size: 80mm auto;   /* <-- Thermal 80mm */
-          margin: 0;         /* remove browser default margin */
+          size: 80mm auto;
+          margin: 0;
         }
       }
 
-      /* 🔥 Burn print effect: all text bold & black */
-      body,
-      .ticket,
-      .ticket * {
+      /* ---------- GLOBAL ---------- */
+      body {
+        background: #fff;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
         margin: 0;
-        padding: 0;
-         font-family: 'Arial', sans-serif;
-        font-weight: bold;
-        color: #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .ticket {
-        width: 80mm;   /* <-- fixed width */
-        max-width: 80mm;
         padding: 10px;
-        box-sizing: border-box;
+        color: #000;
       }
 
       h1 {
         text-align: center;
         margin: 0 0 10px 0;
-        font-size: 24px;
-        border-bottom: 2px solid #000;
-        padding-bottom: 5px;
+        font-size: 18px;
       }
 
-      .kot-head {
-        border: 2px solid #000;
-        padding: 6px;
-        margin-bottom: 10px;
-      }
-
-      .kot-head .row {
+      .row {
         display: flex;
         justify-content: space-between;
-        margin: 3px 0;
+        margin: 6px 0;
+        font-size: 12px;
+      }
+
+      .badge {
+        border: 1px solid #000;
+        padding: 3px 5px;
+        text-align: center;
+        margin: 6px 0;
+        font-weight: bold;
         font-size: 11px;
       }
 
+      .kot-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+        font-size: 12px;
+      }
+
+      .kot-head .cell {
+        padding: 4px 6px;
+      }
+
+      .note {
+        border: 1px dashed #000;
+        padding: 8px;
+        margin: 10px 0;
+        font-weight: bold;
+        font-size: 12px;
+      }
+
+      /* ---------- TABLE ---------- */
       table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 8px;
-        border: 2px solid #000;
-      }
-
-      th {
-        text-align: left;
-        padding: 6px;
-        border-bottom: 2px solid #000;
         font-size: 12px;
       }
 
-      th:last-child {
+      thead th {
+        text-align: left;
+        padding: 6px 8px;
+        font-size: 12px;
+        border-bottom: 2px solid #000;
+      }
+
+      thead th:last-child {
         text-align: center;
         width: 40px;
       }
 
-      td {
-        padding: 6px;
-        font-size: 12px;
+      /* ✅ tbody styling */
+      tbody {
+        display: table-row-group;
+        background: #fff;
+        font-size: 12px; /* consistent body font */
+      }
+
+      tbody tr {
         border-bottom: 1px dashed #000;
       }
 
-      td:first-child {
+      tbody td {
+        padding: 6px 8px;
+        font-size: 13px;
+        vertical-align: top;
+      }
+
+      tbody td:first-child {
         text-align: left;
       }
 
-      td:last-child {
+      tbody td:last-child {
         text-align: center;
-      }
-
-      .note {
-        border: 2px dashed #000;
-        padding: 6px;
-        margin: 10px 0;
-        font-size: 12px;
-      }
-
-      .footer {
-        text-align: center;
-        margin-top: 15px;
-        font-size: 11px;
-        border-top: 2px solid #000;
-        padding-top: 6px;
       }
     </style>
   </head>
   <body>
-    <div class="ticket">
-      <h1>🍽️ KOT Note - (${String(kotNo).padStart(3,'0')})</h1>
+    <h1>KOT Note - (${String(kotNo).padStart(3,'0')})</h1>
 
-      <div class="kot-head">
-        <div class="row">
-          <span><b>Date:</b> ${dateStr}</span>
-          <span><b>Time:</b> ${timeStr}</span>
-        </div>
-        <div class="row">
-          <span><b>Order:</b> ${table.orderId}</span>
-          <span><b>Table:</b> ${table.number}</span>
-        </div>
-        <div class="row">
-          <span><b>Type:</b> ${orderType}</span>
-          <span><b>Cashier:</b> ${props.loggedInUser?.name ?? "N/A"}</span>
-        </div>
-      </div>
-
-      ${noteBlock}
-
-      <table>
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Qty</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${productRows}
-        </tbody>
-      </table>
-
-      <div class="footer">
-        <p><strong>Kitchen Copy</strong></p>
-        <p>Please prepare items as ordered</p>
-      </div>
+    <div class="kot-head">
+      <div class="cell"><b>Date:</b> ${dateStr}</div>
+      <div class="cell"><b>Time:</b> ${timeStr}</div>
+      <div class="cell"><b>Order:</b> ${table.orderId}</div>
+      <div class="cell"><b>Table:</b> ${table.number - 1}</div>
+      <div class="cell"><b>Type:</b> ${orderType}</div>
     </div>
+
+    ${noteBlock}
+
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th style="text-align:center;">Qty</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${productRows}
+      </tbody>
+    </table>
   </body>
 </html>
-`;
 
-
-
-
-
-
+    `;
 
     const w = window.open("", "_blank");
     if (!w) {
