@@ -12,12 +12,7 @@ use Inertia\Inertia;
 
 class ReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-
-
-
+  
 public function index(Request $request)
 {
     if (!Gate::allows('hasRole', ['Admin'])) {
