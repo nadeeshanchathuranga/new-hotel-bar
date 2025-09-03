@@ -181,14 +181,7 @@
           </span>
         </p>
       </div>
-      <div class="py-2 px-4 border-2 border-red-600 rounded-xl bg-red-100 shadow-sm text-center">
-        <p class="text-sm font-extrabold text-black uppercase">
-          Profit:
-          <span class="text-base font-bold">
-            {{ salesProfitTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }} LKR
-          </span>
-        </p>
-      </div>
+
     </div>
   </div>
 
@@ -211,7 +204,7 @@
       <col style="width:150px" />  <!-- Discounts -->
       <col style="width:140px" />  <!-- Net -->
       <col style="width:140px" />  <!-- Cost -->
-      <col style="width:140px" />  <!-- Profit -->
+
     </colgroup>
 
     <thead class="sticky top-0 z-10">
@@ -225,7 +218,7 @@
         <th class="p-3 num font-semibold">Discounts (LKR)</th>
         <th class="p-3 num font-semibold">Net (LKR)</th>
         <th class="p-3 num font-semibold">Cost (LKR)</th>
-        <th class="p-3 num font-semibold">Profit (LKR)</th>
+
       </tr>
     </thead>
 
@@ -246,7 +239,7 @@
         <td class="p-3 num">{{ toMoney(s.custom_discount || 0) }}</td>
         <td class="p-3 num">{{ toMoney(netAmount(s)) }}</td>
         <td class="p-3 num">{{ toMoney(s.total_cost || 0) }}</td>
-        <td class="p-3 num">{{ toMoney(profitAmount(s)) }}</td>
+
       </tr>
     </tbody>
 
@@ -266,9 +259,7 @@
         <td class="p-3 num">
           {{ salesCostTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }}
         </td>
-        <td class="p-3 num">
-          {{ salesProfitTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }}
-        </td>
+
       </tr>
     </tfoot>
   </table>
@@ -297,14 +288,7 @@
               <span class="text-base font-bold">{{ totalSalesQty.toLocaleString() }}</span>
             </p>
           </div>
-          <div class="py-2 px-4 border-2 border-blue-600 rounded-xl bg-blue-100 shadow-sm text-center">
-            <p class="text-sm font-extrabold text-black uppercase">
-              Total Profit:
-              <span class="text-base font-bold">
-                {{ grandTotalProfit.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }} LKR
-              </span>
-            </p>
-          </div>
+
         </div>
       </div>
 
@@ -319,7 +303,7 @@
               <th class="p-3 text-center font-semibold">Price (LKR)</th>
               <th class="p-3 text-center font-semibold">Discount</th>
               <th class="p-3 text-center font-semibold">Price After Discount</th>
-              <th class="p-3 text-center font-semibold">Profit</th>
+
             </tr>
           </thead>
 
@@ -337,7 +321,7 @@
                 <span v-else>Rs. {{ Number(p.discount).toFixed(2) }}</span>
               </td>
               <td class="p-3 text-center">{{ priceAfterDiscount(p).toFixed(2) }}</td>
-              <td class="p-3 text-center">{{ totalProfit(p).toFixed(2) }} LKR</td>
+
             </tr>
           </tbody>
 
@@ -349,9 +333,7 @@
               <td class="p-3 text-right"></td>
               <td class="p-3 text-right"></td>
               <td class="p-3 text-right"></td>
-              <td class="p-3 text-right">
-                {{ grandTotalProfit.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }} LKR
-              </td>
+
             </tr>
           </tfoot>
         </table>
@@ -461,8 +443,17 @@ const filterData = () => {
     alert("Start date cannot be greater than end date.");
     return;
   }
-  router.get(route("reports.index"), { start_date: startDate.value, end_date: endDate.value }, { preserveScroll: true, preserveState: true });
+  const params = {};
+  if (startDate.value) params.start_date = startDate.value;
+  if (endDate.value)   params.end_date   = endDate.value;
+
+  router.get(route("reports.index"), params, {
+    preserveScroll: true,
+    preserveState: true, // keep instance; props will update and watchers will sync refs
+  });
 };
+
+
 
 // ===== Charts data (same as before) =====
 const sortDescending = (data) =>
@@ -576,7 +567,7 @@ const downloadSalesTablePDF = () => {
     (cells[6] ?? "").replace(/\s*LKR\s*$/i, ""),  // Discounts
     (cells[7] ?? "").replace(/\s*LKR\s*$/i, ""),  // Net
     (cells[8] ?? "").replace(/\s*LKR\s*$/i, ""),  // Cost
-    (cells[9] ?? "").replace(/\s*LKR\s*$/i, ""),  // Profit
+
   ]);
 
   if ($ && $.fn && $.fn.dataTable && $.fn.dataTable.isDataTable("#salesTbl")) {
@@ -606,7 +597,7 @@ const downloadSalesTablePDF = () => {
 
   const head = [[
     "#","Date","Order Number","Customer","Qty",
-    "Gross (LKR)","Discounts (LKR)","Net (LKR)","Cost (LKR)","Profit (LKR)"
+    "Gross (LKR)","Discounts (LKR)","Net (LKR)","Cost (LKR)"
   ]];
 
   // Build the foot row using the same 10 columns and a colSpan on the "Totals:" label
@@ -640,7 +631,7 @@ const downloadSalesTablePDF = () => {
       6: { cellWidth: 28, halign: "right" },  // Discounts
       7: { cellWidth: 28, halign: "right" },  // Net
       8: { cellWidth: 28, halign: "right" },  // Cost
-      9: { cellWidth: 28, halign: "right" },  // Profit
+
     },
     margin: { top: 18, left: 8, right: 8 },
     didParseCell: (data) => {
@@ -760,7 +751,7 @@ const downloadStockTablePDF = () => {
   doc.setFontSize(10);
   doc.text(`Date range: ${dateRangeLabel.value} • Generated: ${new Date().toLocaleString()}`, 14, 18);
 
-  const head = [[ "#","Product","Sales Qty","Total Sales Value (LKR)","Price (LKR)","Discount","Price After Discount","Profit" ]];
+  const head = [[ "#","Product","Sales Qty","Total Sales Value (LKR)","Price (LKR)","Discount","Price After Discount" ]];
 
   doc.autoTable({
     head, body: rows, startY: 24, theme: "striped",

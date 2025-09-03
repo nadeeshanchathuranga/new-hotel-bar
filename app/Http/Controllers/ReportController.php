@@ -9,46 +9,65 @@ use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class ReportController extends Controller
 {
-  
+ 
+
 public function index(Request $request)
 {
     if (!Gate::allows('hasRole', ['Admin'])) {
         abort(403, 'Unauthorized');
     }
 
-    $startDate = $request->input('start_date', '');
-    $endDate   = $request->input('end_date', '');
+    // Raw query params (may be empty strings)
+    $startInput = $request->input('start_date', '');
+    $endInput   = $request->input('end_date', '');
 
-    // 1) Product IDs sold within date range (if provided)
-    if ($startDate && $endDate) {
-        $productIds = SaleItem::whereHas('sale', function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('sale_date', [$startDate, $endDate]);
-        })->pluck('product_id')->unique();
+    // Parse to Carbon or null. If you store `sale_date` as DATE (no time), use ->toDateString().
+    // If it's DATETIME, keep full Carbon. We'll use endOfDay for inclusivity.
+    $start = $startInput ? Carbon::parse($startInput)->startOfDay() : null;
+    $end   = $endInput   ? Carbon::parse($endInput)->endOfDay()   : null;
 
-        $products = Product::whereIn('id', $productIds)
-            ->orderBy('created_at', 'desc')->get();
+    // --- Build range helper ---
+    $applyRangeToSale = function ($q) use ($start, $end) {
+        if ($start && $end) {
+            // full range
+            $q->whereBetween('sale_date', [$start, $end]);
+        } elseif ($start) {
+            $q->where('sale_date', '>=', $start);
+        } elseif ($end) {
+            $q->where('sale_date', '<=', $end);
+        }
+    };
+
+    // === PRODUCTS filtered to "sold in range" (if any bound) ===
+    // Find product IDs that appear in SaleItems whose Sale is inside the range.
+    $productIdsQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyRangeToSale) {
+        $applyRangeToSale($q);
+    });
+
+    // If no date bounds given, show all products (as before)
+    if ($start || $end) {
+        $productIds = $productIdsQuery->pluck('product_id')->unique();
+        $products = Product::whereIn('id', $productIds)->orderBy('created_at', 'desc')->get();
     } else {
         $products = Product::orderBy('created_at', 'desc')->get();
     }
 
-    // 2) Sales query (with eager loads)
- $salesQuery = Sale::whereHas('saleItems.product.category')
-    ->with(['saleItems.product.category', 'employee', 'customer']);
+    // === SALES (drives Sales Table + charts/totals) ===
+    $salesQuery = Sale::whereHas('saleItems.product.category')
+        ->with(['saleItems.product.category', 'employee', 'customer']);
 
-    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale');
+    // Apply date range (if any)
+    $applyRangeToSale($salesQuery);
 
-    if ($startDate && $endDate) {
-        $salesQuery->whereBetween('sale_date', [$startDate, $endDate]);
+    // === sales_qty per product computed in the SAME filtered window ===
+    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyRangeToSale) {
+        $applyRangeToSale($q);
+    });
 
-        $salesQuantitiesQuery->whereHas('sale', function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('sale_date', [$startDate, $endDate]);
-        });
-    }
-
-    // 3) Total sales qty per product (filtered)
     $salesQuantities = $salesQuantitiesQuery
         ->select('product_id')
         ->selectRaw('SUM(quantity) as total_sales_qty')
@@ -56,47 +75,44 @@ public function index(Request $request)
         ->get()
         ->keyBy('product_id');
 
-    // 4) Attach sales_qty to products
+    // Attach sales_qty to each product
     $products->transform(function ($product) use ($salesQuantities) {
         $product->sales_qty = $salesQuantities->get($product->id)?->total_sales_qty ?? 0;
         return $product;
     });
 
-    // 5) Sales data
+    // Pull sales (filtered + ordered)
     $sales = $salesQuery->orderBy('sale_date', 'desc')->get();
 
-    // 6) Category sales
+    // Category sales (based on filtered sales)
     $categorySales = [];
     foreach ($sales as $sale) {
         foreach ($sale->saleItems as $item) {
             $categoryName = $item->product->category->name ?? 'No Category';
+            // If you want by item total, use item totals; otherwise this keeps your original logic:
             $categorySales[$categoryName] = ($categorySales[$categoryName] ?? 0) + $sale->total_amount;
         }
     }
 
-    // 7) Payment method totals (if you need them on the backend)
-    $paymentMethodTotals = $sales->groupBy('payment_method')->map(function ($group) {
-        return $group->sum('total_amount');
-    })->toArray();
+    // Payment method totals (filtered)
+    $paymentMethodTotals = $sales->groupBy('payment_method')->map(fn($g) => $g->sum('total_amount'))->toArray();
 
-    // 8) Employee sales summary
+    // Employee sales summary (filtered) — respecting discounts as in your code
     $employeeSalesSummary = [];
     foreach ($sales as $sale) {
         if (!$sale->employee) continue;
+        $name = $sale->employee->name;
 
-        $employeeName = $sale->employee->name;
-        if (!isset($employeeSalesSummary[$employeeName])) {
-            $employeeSalesSummary[$employeeName] = [
-                'Employee Name' => $employeeName,
-                'Total Sales Amount' => 0,
-            ];
-        }
+        $employeeSalesSummary[$name] ??= [
+            'Employee Name'       => $name,
+            'Total Sales Amount'  => 0,
+        ];
 
-        $netAmount = $sale->total_amount - ($sale->discount ?? 0);
-        $employeeSalesSummary[$employeeName]['Total Sales Amount'] += $netAmount;
+        $netAmount = ($sale->total_amount ?? 0) - ($sale->discount ?? 0) - ($sale->custom_discount ?? 0);
+        $employeeSalesSummary[$name]['Total Sales Amount'] += $netAmount;
     }
 
-    // 9) Overall stats
+    // Overall stats (filtered)
     $totalSaleAmount         = $sales->sum('total_amount');
     $totalCost               = $sales->sum('total_cost');
     $totalDiscount           = $sales->sum('discount');
@@ -104,14 +120,10 @@ public function index(Request $request)
     $netProfit               = $totalSaleAmount - $totalCost - $totalDiscount - $customeDiscount;
     $totalTransactions       = $sales->count();
     $averageTransactionValue = $totalTransactions > 0 ? $totalSaleAmount / $totalTransactions : 0;
-    $totalCustomer           = $salesQuery->distinct('customer_id')->count('customer_id');
 
+    // Unique customers in the filtered set
+    $totalCustomer = (clone $salesQuery)->distinct('customer_id')->count('customer_id');
 
-
-
-
-
-    // 10) Return to Vue via Inertia
     return Inertia::render('Reports/Index', [
         'products'                => $products,
         'sales'                   => $sales,
@@ -122,16 +134,14 @@ public function index(Request $request)
         'customeDiscount'         => $customeDiscount,
         'totalTransactions'       => $totalTransactions,
         'averageTransactionValue' => round($averageTransactionValue, 2),
-        'startDate'               => $startDate,
-        'endDate'                 => $endDate,
+        'startDate'               => $startInput, // echo back what user chose
+        'endDate'                 => $endInput,
         'categorySales'           => $categorySales,
         'employeeSalesSummary'    => $employeeSalesSummary,
-
-
+        // If you also want to surface payment method totals to the UI:
+        // 'paymentMethodTotals'      => $paymentMethodTotals,
     ]);
 }
-
-
 
 
 
