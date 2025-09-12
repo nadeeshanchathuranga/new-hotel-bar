@@ -626,6 +626,23 @@
                 </div>
               </div>
 
+              <!-- TEMP BILL-ONLY BUTTON (matches UI, sits above Confirm Order) -->
+              <div class="flex items-center justify-center w-full">
+                <button
+                  @click="printBillOnly"
+                  type="button"
+                  :disabled="!selectedTable || selectedTable.products.length === 0"
+                  :class="[
+                    'w-full bg-white border-2 border-black py-4 text-2xl font-bold tracking-wider text-center text-black uppercase rounded-xl',
+                    !selectedTable || selectedTable.products.length === 0
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:bg-gray-50'
+                  ]"
+                >
+                  <i class="pr-4 ri-printer-line"></i> Get Bill (Temp)
+                </button>
+              </div>
+
               <div class="flex items-center justify-center w-full">
                 <button
                   @click="submitOrder"
@@ -1797,6 +1814,188 @@ const searchCustomer = async () => {
     }
   } catch (error) {
     console.error("Error fetching customer:", error.response?.data || error.message);
+  }
+};
+
+/* =========================
+   TEMP: PRINT BILL ONLY (no submit)
+========================= */
+const printBillOnly = () => {
+  try {
+    const t = selectedTable.value;
+    if (!t || !Array.isArray(t.products) || t.products.length === 0) {
+      isAlertModalOpen.value = true;
+      message.value = "No items to print.";
+      return;
+    }
+
+    const fmt = (n) => (Number(n || 0)).toFixed(2);
+    const orderType =
+      t.order_type === "takeaway" ? "Takeaway" :
+      t.order_type === "pickup"   ? "Delivery" :
+                                    "Dine In";
+
+    const itemRows = t.products.map(p => {
+      const price = parseFloat(p.selling_price) || 0;
+      const qty   = Number(p.quantity || 1);
+      const discP = Number(p.discount || 0);
+      const line  = p.apply_discount ? (price * qty * (100 - discP)) / 100 : price * qty;
+      return `
+        <tr>
+          <td>${p.name || ""}</td>
+          <td style="text-align:center;">${qty}</td>
+          <td style="text-align:right;">${fmt(price)}</td>
+          <td style="text-align:center;">${p.apply_discount ? `${fmt(discP)}%` : "-"}</td>
+          <td style="text-align:right;">${fmt(line)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const sub        = Number(subtotal.value || 0);
+    const discTotal  = Number(totalDiscount.value || 0);             // includes product + coupon + owner
+    const customDisc = Number(customDiscCalculated.value || 0);
+    const deliv      = t.order_type === "pickup" ? Number(t.delivery_charge || 0) : 0;
+
+    const svcRate    = Number(t.service_charge || 0);
+    const svcAmt     = (sub * svcRate) / 100;
+
+    const preBank    = sub - discTotal - customDisc + deliv + svcAmt;
+
+    const bankRate   = Number(t.bank_service_charge || 0);
+    const bankAmt    = (preBank * bankRate) / 100;
+
+    const grandTotal = Number(total.value || 0);
+    const cashVal    = Number(t.cash || 0);
+    const balVal     = Number(balance.value || 0);
+
+    const couponVal  = appliedCoupon.value ? Number(appliedCoupon.value.discount || 0) : 0;
+    const ownerVal   = Number(ownerDiscountValue.value || 0);
+
+    const bankLine = selectedPaymentMethod.value === "card" ? `
+      <div class="row">
+        <div><b>Bank:</b> ${t.bank_name || "-"}</div>
+        <div><b>Card Last 4:</b> ${t.card_last4 || "-"}</div>
+      </div>
+    ` : "";
+
+    const cashLine = selectedPaymentMethod.value === "cash" ? `
+      <div class="row">
+        <div><b>Cash:</b> ${fmt(cashVal)} LKR</div>
+        <div><b>Balance:</b> ${fmt(balVal)} LKR</div>
+      </div>
+    ` : "";
+
+    const couponLine = couponVal > 0 ? `
+      <div class="row"><div>Coupon</div><div>- ${fmt(couponVal)} LKR</div></div>
+    ` : "";
+
+    const ownerLine = ownerVal > 0 ? `
+      <div class="row"><div>Owner Discount</div><div>- ${fmt(ownerVal)} LKR</div></div>
+    ` : "";
+
+    const customLine = customDisc > 0 ? `
+      <div class="row"><div>Custom Discount</div><div>- ${fmt(customDisc)} LKR</div></div>
+    ` : "";
+
+    const delivLine = deliv > 0 ? `
+      <div class="row"><div>Delivery</div><div>${fmt(deliv)} LKR</div></div>
+    ` : "";
+
+    const svcLine = svcRate > 0 ? `
+      <div class="row"><div>Service Charge (${fmt(svcRate)}%)</div><div>${fmt(svcAmt)} LKR</div></div>
+    ` : "";
+
+    const bankSvcLine = bankRate > 0 ? `
+      <div class="row"><div>Bank Service (${fmt(bankRate)}%)</div><div>${fmt(bankAmt)} LKR</div></div>
+    ` : "";
+
+    const receiptHTML = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Bill</title>
+          <style>
+            @media print { body { margin:0; padding:0; -webkit-print-color-adjust: exact; } }
+            body { background:#fff; font-size:12px; font-family:Arial,sans-serif; margin:0; padding:12px; color:#000; }
+            h1 { text-align:center; margin:0 0 10px 0; font-size:16px; }
+            .row { display:flex; justify-content:space-between; margin:6px 0; }
+            .badge { border:1px solid #000; padding:4px 6px; text-align:center; margin:8px 0; font-weight:bold; }
+            table { width:100%; border-collapse:collapse; margin-top:8px; }
+            th, td { padding:6px 8px; border-bottom:1px dashed #999; }
+            th { text-align:left; }
+            td { text-align:right; }
+            td:first-child { text-align:left; }
+            .totals { margin-top:10px; border-top:1px solid #000; padding-top:8px; }
+            .grand { font-weight:bold; font-size:14px; border-top:1px solid #000; padding-top:8px; margin-top:6px; }
+            .note { border-top:1px solid #000; padding-top:8px; margin-top:10px; font-weight:bold; }
+          </style>
+        </head>
+        <body>
+          <h1>Customer Bill (Preview)</h1>
+
+          <div class="badge">
+            ${t.id === 'default' ? 'Live Bill' : `Table: ${t.number - 1}`} • ${orderType}
+          </div>
+
+          <div class="row">
+            <div><b>Date:</b> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+            <div><b>Order No:</b> ${t.orderId}</div>
+          </div>
+          <div class="row">
+            <div><b>Customer:</b> ${customer.value?.name || "-"}</div>
+            <div><b>Cashier:</b> ${props.loggedInUser?.name ?? "-"}</div>
+          </div>
+          ${bankLine}
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width:45%;">Item</th>
+                <th style="width:10%; text-align:center;">Qty</th>
+                <th style="width:15%; text-align:right;">Price</th>
+                <th style="width:10%; text-align:center;">Disc</th>
+                <th style="width:20%; text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="row"><div>Sub Total</div><div>${fmt(sub)} LKR</div></div>
+            <div class="row"><div>Discount (items/coupon/owner)</div><div>- ${fmt(discTotal)} LKR</div></div>
+            ${couponLine}
+            ${ownerLine}
+            ${customLine}
+            ${delivLine}
+            ${svcLine}
+            ${bankSvcLine}
+            <div class="grand row"><div>Grand Total</div><div>${fmt(grandTotal)} LKR</div></div>
+          </div>
+
+          ${cashLine}
+
+          ${t.kitchen_note ? `<div class="note">Kitchen Note: ${t.kitchen_note}</div>` : ""}
+        </body>
+      </html>
+    `;
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      isAlertModalOpen.value = true;
+      message.value = "Popup blocked. Allow popups to print the bill.";
+      return;
+    }
+    w.document.open();
+    w.document.write(receiptHTML);
+    w.document.close();
+    w.onload = () => { w.focus(); w.print(); w.close(); };
+  } catch (err) {
+    console.error("Bill print error:", err);
+    isAlertModalOpen.value = true;
+    message.value = "Failed to print the bill.";
   }
 };
 </script>
