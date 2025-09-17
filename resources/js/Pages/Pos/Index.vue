@@ -197,6 +197,38 @@
                 }}
               </h2>
 
+
+<div class="flex flex-col md:flex-row items-center gap-4">
+  <!-- Wholesale / Retail Toggle -->
+  <div class="flex items-center bg-gray-100 rounded-full px-3 py-1">
+    <span
+      class="text-xl font-semibold cursor-pointer"
+      :class="!isConvertPrice ? 'text-blue-600' : 'text-gray-500'"
+      @click="setMode(false)"
+    >
+      LKR
+    </span>
+
+    <div
+      class="mx-2 w-10 h-6 bg-blue-300 rounded-full relative cursor-pointer"
+      @click="toggleMode"
+    >
+      <div
+        class="w-5 h-6 bg-white rounded-full shadow transition-transform duration-300"
+        :class="isConvertPrice ? 'translate-x-5' : 'translate-x-0'"
+      ></div>
+    </div>
+
+    <span
+      class="text-xl font-semibold cursor-pointer"
+      :class="isConvertPrice ? 'text-blue-600' : 'text-gray-500'"
+      @click="setMode(true)"
+    >
+      Dollar
+    </span>
+  </div>
+</div>
+
               <span class="flex cursor-pointer" @click="isSelectModalOpen = true">
                 <p class="text-xl text-blue-600 font-bold">Food Menu</p>
                 <img src="/images/selectpsoduct.svg" class="w-6 h-6 ml-2" />
@@ -254,7 +286,7 @@
                   </div>
 
                   <p class="text-lg font-medium text-gray-700">
-                    {{ item.selling_price }} LKR
+                {{ item.selling_price }} {{ isConvertPrice ? 'USD' : 'LKR' }}
                   </p>
 
                   <!-- Quantity Controls -->
@@ -295,147 +327,179 @@
                           Remove {{ item.discount }}% Off
                         </button>
                       </div>
-                      <p class="text-lg font-bold text-gray-900">
-                        {{
-                          item.apply_discount
-                            ? (item.selling_price * item.quantity * (100 - item.discount)) / 100
-                            : item.selling_price * item.quantity
-                        }} LKR
-                      </p>
+                     <p class="text-lg font-bold text-gray-900">
+  {{
+    Number(
+      (item.apply_discount ? Number(item.discounted_price) : Number(item.selling_price))
+      * Number(item.quantity)
+    ).toFixed(2)
+  }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+</p>
+
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Summary -->
-            <div class="w-full pt-6 space-y-2">
-              <div class="flex items-center justify-between w-full px-16">
-                <p class="text-xl">Sub Total</p>
-                <p class="text-xl">{{ subtotal }} LKR</p>
-              </div>
 
-              <div class="flex items-center justify-between w-full px-16 py-2 pb-4 border-b border-black">
-                <p class="text-xl">Discount</p>
-                <p class="text-xl">( {{ totalDiscount }} LKR )</p>
-              </div>
 
-              <div
-                v-if="selectedTable.order_type === 'pickup'"
-                class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
-              >
-                <select
-                  v-model="selectedTable.delivery_charge"
-                  class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
-                >
-                  <option value="">Select Delivery Charge</option>
-                  <option v-for="charge in delivery" :key="charge.id" :value="charge.delivery_charge">
-                    {{ charge.delivery_charge }} LKR
-                  </option>
-                </select>
-              </div>
 
-              <div
-                v-if="selectedTable && selectedTable.id !== 'default' && selectedTable.order_type !== 'pickup'"
-                class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
-              >
-                <select
-                  v-model="selectedTable.service_charge"
-                  class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
-                >
-                  <option value="">Select Service Charge</option>
-                  <option
-                    v-for="charge in serviceCharge"
-                    :key="charge.id"
-                    :value="parseFloat(charge.service_charge)"
-                  >
-                    {{ charge.service_charge }}%{{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
-                  </option>
-                </select>
-              </div>
 
-              <div class="flex items-center justify-between w-full px-16 pt-4">
-                <p class="text-3xl text-black">Total</p>
-                <p class="text-3xl text-black">{{ total }} LKR</p>
-              </div>
 
-              <div
-                v-if="selectedPaymentMethod === 'cash'"
-                class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black"
-              >
-                <p class="text-xl text-black">Cash</p>
-                <span>
-                  <CurrencyInput v-if="selectedTable" v-model="selectedTable.cash" :options="{ currency: 'EUR' }" />
-                  <span class="ml-2">LKR</span>
-                </span>
-              </div>
 
-              <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
-                <div class="flex items-center justify-between w-full mt-4">
-                  <p class="text-xl text-black">Select Bank</p>
-                  <Combobox v-model="selectedTable.bank_name">
-                    <div class="relative w-[150px]">
-                      <ComboboxInput
-                        class="w-full h-12 border border-gray-300 rounded-md py-2 px-3 text-black"
-                        @change="query = $event.target.value"
-                        placeholder="Search Bank"
-                      />
-                      <ComboboxOptions
-                        v-if="filteredBanks.length"
-                        class="absolute w-full bg-white border border-gray-300 shadow-md rounded-md mt-1 max-h-40 overflow-auto"
-                      >
-                        <ComboboxOption
-                          v-for="bank in filteredBanks"
-                          :key="bank"
-                          :value="bank"
-                          class="p-2 hover:bg-blue-100 cursor-pointer"
-                        >
-                          {{ bank }}
-                        </ComboboxOption>
-                      </ComboboxOptions>
-                    </div>
-                  </Combobox>
-                </div>
-              </div>
+<!-- Summary -->
+<div class="w-full pt-6 space-y-2">
+  <div class="flex items-center justify-between w-full px-16">
+    <p class="text-xl">Sub Total</p>
+    <p class="text-xl">
+      {{ subtotal }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+    </p>
+  </div>
 
-              <div
-                v-if="selectedPaymentMethod === 'card'"
-                class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
-              >
-                <select
-                  v-model="selectedTable.bank_service_charge"
-                  class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
-                >
-                  <option value="">Select Bank Service Charge</option>
-                  <option
-                    v-for="charge in bankCharge"
-                    :key="charge.id"
-                    :value="parseFloat(charge.bank_service_charge)"
-                  >
-                    {{ charge.bank_service_charge }}%{{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
-                  </option>
-                </select>
-              </div>
+  <div class="flex items-center justify-between w-full px-16 py-2 pb-4 border-b border-black">
+    <p class="text-xl">Discount</p>
+    <p class="text-xl">
+      ( {{ totalDiscount }} {{ isConvertPrice ? 'USD' : 'LKR' }} )
+    </p>
+  </div>
 
-              <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
-                <div class="flex items-center justify-between w-full mt-4">
-                  <p class="text-xl text-black">Last 4 Digits of Card</p>
-                  <input
-                    v-model="selectedTable.card_last4"
-                    type="text"
-                    maxlength="4"
-                    pattern="[0-9]{4}"
-                    placeholder="Last 4 Digits"
-                    class="w-36 text-center border border-gray-300 rounded-lg py-2 text-x"
-                  />
-                </div>
-              </div>
+  <div
+    v-if="selectedTable.order_type === 'pickup'"
+    class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
+  >
+    <select
+      v-model="selectedTable.delivery_charge"
+      class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
+    >
+      <option value="">Select Delivery Charge</option>
+      <option
+        v-for="charge in delivery"
+        :key="charge.id"
+        :value="charge.delivery_charge"
+      >
+        {{ charge.delivery_charge }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+      </option>
+    </select>
+  </div>
 
-              <div class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black">
-                <p class="text-xl text-black">Balance</p>
-                <p>{{ balance }} LKR</p>
-              </div>
-            </div>
+  <div
+    v-if="selectedTable && selectedTable.id !== 'default' && selectedTable.order_type !== 'pickup'"
+    class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
+  >
+    <select
+      v-model="selectedTable.service_charge"
+      class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
+    >
+      <option value="">Select Service Charge</option>
+      <option
+        v-for="charge in serviceCharge"
+        :key="charge.id"
+        :value="parseFloat(charge.service_charge)"
+      >
+        {{ charge.service_charge }}%
+        {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
+      </option>
+    </select>
+  </div>
+
+  <div class="flex items-center justify-between w-full px-16 pt-4">
+    <p class="text-3xl text-black">Total</p>
+    <p class="text-3xl text-black">
+      {{ total }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+    </p>
+  </div>
+
+  <div
+    v-if="selectedPaymentMethod === 'cash'"
+    class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black"
+  >
+    <p class="text-xl text-black">Cash</p>
+    <span class="flex items-center">
+      <CurrencyInput
+        v-if="selectedTable"
+        v-model="selectedTable.cash"
+        :options="{ currency: isConvertPrice ? 'USD' : 'LKR' }"
+      />
+      <span class="ml-2">{{ isConvertPrice ? 'USD' : 'LKR' }}</span>
+    </span>
+  </div>
+
+  <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
+    <div class="flex items-center justify-between w-full mt-4">
+      <p class="text-xl text-black">Select Bank</p>
+      <Combobox v-model="selectedTable.bank_name">
+        <div class="relative w-[150px]">
+          <ComboboxInput
+            class="w-full h-12 border border-gray-300 rounded-md py-2 px-3 text-black"
+            @change="query = $event.target.value"
+            placeholder="Search Bank"
+          />
+          <ComboboxOptions
+            v-if="filteredBanks.length"
+            class="absolute w-full bg-white border border-gray-300 shadow-md rounded-md mt-1 max-h-40 overflow-auto"
+          >
+            <ComboboxOption
+              v-for="bank in filteredBanks"
+              :key="bank"
+              :value="bank"
+              class="p-2 hover:bg-blue-100 cursor-pointer"
+            >
+              {{ bank }}
+            </ComboboxOption>
+          </ComboboxOptions>
+        </div>
+      </Combobox>
+    </div>
+  </div>
+
+  <div
+    v-if="selectedPaymentMethod === 'card'"
+    class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
+  >
+    <select
+      v-model="selectedTable.bank_service_charge"
+      class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
+    >
+      <option value="">Select Bank Service Charge</option>
+      <option
+        v-for="charge in bankCharge"
+        :key="charge.id"
+        :value="parseFloat(charge.bank_service_charge)"
+      >
+        {{ charge.bank_service_charge }}%
+        {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
+      </option>
+    </select>
+  </div>
+
+  <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
+    <div class="flex items-center justify-between w-full mt-4">
+      <p class="text-xl text-black">Last 4 Digits of Card</p>
+      <input
+        v-model="selectedTable.card_last4"
+        type="text"
+        maxlength="4"
+        pattern="[0-9]{4}"
+        placeholder="Last 4 Digits"
+        class="w-36 text-center border border-gray-300 rounded-lg py-2 text-x"
+      />
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black">
+    <p class="text-xl text-black">Balance</p>
+    <p>{{ balance }} {{ isConvertPrice ? 'USD' : 'LKR' }}</p>
+  </div>
+</div>
+
+
+
+
+
+
+
+
 
             <!-- Owner Discount -->
             <div class="w-full my-5">
@@ -669,6 +733,7 @@
     :order_type="selectedTable.order_type"
     :owner_discount_value="ownerDiscountValue"
     :owner_code="ownerCodeValue"
+    :is-convert-price="isConvertPrice"
   />
   <AlertModel v-model:open="isAlertModalOpen" :message="message" />
 
@@ -713,6 +778,7 @@ const props = defineProps({
   bankCharge: Array,
   serviceCharge: Array,
   owners: Array,
+    isConvertPrice: { type: Boolean, default: false },
 });
 
 /* =========================
@@ -769,6 +835,7 @@ const error = ref(null);
 const products = ref([]);
 const isSuccessModalOpen = ref(false);
 const isAlertModalOpen = ref(false);
+const isConvertPrice = ref(false);
 const message = ref("");
 const appliedCoupon = ref(null);
 const cash = ref(0);
@@ -1203,6 +1270,7 @@ const removeSelectedTable = () => {
     custom_discount_type: "percent",
     kitchen_note: "",
     order_type: "",
+    isConvertPrice: "",
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
@@ -1264,6 +1332,7 @@ const submitOrder = async () => {
       owner_id: ownerForm.owner_id || null,
       owner_discount_value: ownerDiscountValue.value,
       owner_override_amount: ownerFetch.value.override_amount || 0,
+      isConvertPrice: isConvertPrice.value,
     });
 
     isSuccessModalOpen.value = true;
@@ -1473,6 +1542,10 @@ const removeDiscount = (id) => {
   if (p) p.apply_discount = false;
 };
 
+
+
+
+
 const handleSelectedProducts = (selectedProducts) => {
   if (!selectedTable.value) return;
 
@@ -1481,14 +1554,40 @@ const handleSelectedProducts = (selectedProducts) => {
     if (existingProduct) {
       existingProduct.quantity += 1;
     } else {
-      selectedTable.value.products.push({
+      const p = {
         ...fetchedProduct,
         quantity: 1,
         apply_discount: false,
-      });
+      };
+      // cache base prices
+      p._lkr_price = Number(fetchedProduct.selling_price || 0);
+      p._usd_price = Number(fetchedProduct.doller_price || 0);
+
+      // set active price based on current mode
+      p.selling_price = isConvertPrice.value ? p._usd_price : p._lkr_price;
+
+      // recompute discounted price from active price
+      if (p.discount && Number(p.discount) > 0) {
+        p.discounted_price = Number((Number(p.selling_price) * (100 - Number(p.discount))) / 100).toFixed(2);
+      } else {
+        p.discounted_price = Number(p.selling_price).toFixed(2);
+      }
+
+      selectedTable.value.products.push(p);
     }
   });
 };
+
+
+
+
+
+
+
+
+
+
+
 
 /* =========================
    KOT HELPERS (Snapshot-based)
@@ -1519,6 +1618,51 @@ const getKotDelta = (table) => {
   });
   return deltas;
 };
+
+
+
+
+const recalcDiscounted = (p) => {
+  // if a % discount exists, recompute discounted_price from current selling_price
+  if (p?.discount && Number(p.discount) > 0) {
+    p.discounted_price = Number((Number(p.selling_price) * (100 - Number(p.discount))) / 100).toFixed(2);
+  } else {
+    p.discounted_price = Number(p.selling_price).toFixed(2);
+  }
+};
+
+const updatePricesForMode = () => {
+  if (!selectedTable.value || !Array.isArray(selectedTable.value.products)) return;
+
+  selectedTable.value.products.forEach((p) => {
+    // cache the original LKR/USD once
+    if (p._lkr_price == null) p._lkr_price = Number(p.selling_price || 0);
+    if (p._usd_price == null) p._usd_price = Number(p.doller_price || 0);
+
+    // swap visible/used price
+    p.selling_price = isConvertPrice.value ? p._usd_price : p._lkr_price;
+
+    // keep discounted_price consistent with the active price
+    recalcDiscounted(p);
+  });
+};
+
+
+
+
+
+
+const toggleMode = () => {
+  isConvertPrice.value = !isConvertPrice.value;
+  updatePricesForMode();
+};
+
+const setMode = (value) => {
+  isConvertPrice.value = value;
+  updatePricesForMode();
+};
+
+
 
 /** Return true if there are changes vs. last sent snapshot */
 const hasKotChanges = (table) => {
@@ -1598,7 +1742,7 @@ const sendKOT = (table) => {
 
     const receiptHTML = `
       <!doctype html>
-     
+
       <!doctype html>
 <html>
   <head>

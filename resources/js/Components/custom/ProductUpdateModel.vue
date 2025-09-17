@@ -169,6 +169,39 @@
         </span>
       </div>
 
+
+
+
+
+
+ <div class="w-full">
+<label
+                      for="doller_price"
+                      class="block text-sm font-medium text-gray-300"
+                      >Doller Price ($) :</label
+                    >
+        <input
+          type="text"
+          id="doller_price"
+          v-model="form.doller_price"
+          class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+          placeholder="Enter doler price"
+       
+        />
+        <span v-if="form.errors.doller_price" class="mt-2 block text-red-500">
+          {{ form.errors.doller_price }}
+        </span>
+      </div>
+
+
+
+
+
+
+
+
+
+
       <div class="w-full">
         <label for="selling_price" class="block text-sm font-medium text-gray-300">Selling Price:</label>
         <input
@@ -379,6 +412,7 @@ const form = useForm({
   cost_price: null,
   discount: 0,
   selling_price: null,
+  doller_price: null,
   discounted_price: null,
   barcode: "",
   image: null,
@@ -467,6 +501,7 @@ watch(
       form.cost_price = newValue.cost_price || null;
       form.discount = newValue.discount || 0;
       form.selling_price = newValue.selling_price || null;
+      form.doller_price = newValue.doller_price || null;
       form.discounted_price = newValue.discounted_price || null;
       form.barcode = newValue.barcode || "";
       form.image = newValue.image || null;

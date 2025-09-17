@@ -306,6 +306,40 @@
               </div>
 
               <div class="flex items-center gap-8 mt-6">
+
+
+
+
+ <div class="w-full">
+                <label
+                                    for="doller_price"
+                                    class="block text-sm font-medium text-black-300"
+                                    >Doller Price ($) :</label
+                                  >
+                  <input
+                    type="text"
+                    id="doller_price"
+                    v-model="form.doller_price"
+                    class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+                    placeholder="Enter doller price"
+                    
+                  />
+                  <span
+                    v-if="form.errors.doller_price"
+                    class="mt-2 text-red-500"
+                  >
+                    {{ form.errors.doller_price }}
+                  </span>
+                </div>
+
+
+
+
+
+
+
+
+
                 <div class="w-full">
                   <label
                     for="selling_price"
@@ -464,6 +498,7 @@ const form = useForm({
   discount: 0,
   discounted_price: null,
   selling_price: null,
+  doller_price: null,
   stock_quantity: null,
   barcode: "",
   image: null, // For file upload

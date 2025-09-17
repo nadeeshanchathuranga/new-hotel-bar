@@ -224,6 +224,8 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+
+       
         if (!Gate::allows('hasRole', ['Admin'])) {
             abort(403, 'Unauthorized');
         }
@@ -241,6 +243,7 @@ class ProductController extends Controller
             'color_id' => 'nullable|exists:colors,id',
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
+            'doller_price' => 'numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'discount' => 'nullable|numeric|min:0|max:100',
@@ -284,6 +287,8 @@ class ProductController extends Controller
             // Redirect with success message
             return redirect()->route('products.index')->banner('Product created successfully');
         } catch (\Exception $e) {
+
+           
             // Log error and redirect back with an error message
             \Log::error('Error creating product: ' . $e->getMessage());
 
@@ -307,6 +312,7 @@ class ProductController extends Controller
             'color_id' => 'nullable|exists:colors,id',
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
+            'doller_price' => 'numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'discount' => 'nullable|numeric|min:0|max:100', // Validation for discount
@@ -426,6 +432,7 @@ class ProductController extends Controller
             'size_id' => 'nullable|exists:sizes,id',
             'color_id' => 'nullable|exists:colors,id',
             'cost_price' => 'required|numeric|min:0',
+            'doller_price' => 'numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
@@ -546,6 +553,7 @@ class ProductController extends Controller
             'color_id' => 'nullable|exists:colors,id',
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
+            'doller_price' => 'numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'discount' => 'nullable|numeric|min:0|max:100',

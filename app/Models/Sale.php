@@ -30,6 +30,7 @@ class Sale extends Model
         'card_last4',
         'owner_id',
         'owner_discount_value',
+        'isConvertPrice',
     ];
 
 

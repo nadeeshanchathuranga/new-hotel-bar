@@ -49,165 +49,7 @@
                   />
                 </div>
 
-                <!-- Right Side: Text Content -->
-                <div class="flex flex-col justify-between w-1/2 h-full">
-                  <div class="flex items-center justify-between">
-                    <!-- Product Name -->
-                    <p class="text-3xl font-bold text-black w-full break-words">
-                      {{ selectedProduct.name }}
-
-                      <span
-                        v-if="
-                          selectedProduct.discount &&
-                          selectedProduct.discount > 0
-                        "
-                        class="inline-block px-2 py-2 text-sm font-medium text-white bg-red-600 rounded"
-                      >
-                        {{ selectedProduct.discount }} % OFF
-                      </span>
-                    </p>
-
-                    <!-- Discounted Price -->
-                  </div>
-
-                  <p
-                    class="pb-6 mt-2 text-[#00000099] text-xl font-normal italic"
-                  >
-                    {{ selectedProduct.category?.name ?? "No Category" }}
-                  </p>
-
-                  <!-- <p class="pb-6 text-2xl font-bold text-black">
-                    <span class="text-[#00000099] font-normal">Supplier : </span
-                    >{{ selectedProduct.supplier?.name || "N/A" }}
-                  </p> -->
-
-                  <p class="pb-6 text-2xl font-bold text-black">
-                    <span class="text-[#00000099] font-normal"
-                      >Product Code :
-                    </span>
-
-                    {{ selectedProduct?.code ?? "N/A" }}
-                  </p>
-
-                  <p class="pb-6 text-2xl font-bold text-black">
-                    <span class="text-[#00000099] font-normal"
-                      >Product Description :
-                    </span>
-
-                    {{ selectedProduct?.description ?? "N/A" }}
-                  </p>
-
-                  <div
-                    class="flex items-center justify-between w-full text-2xl"
-                  >
-                    <div class="flex flex-col w-full">
-                      <p
-                        class="text-justify text-[#00000099] text-2xl flex items-center pb-6"
-                      >
-                        Base :
-
-                        <span class="font-bold text-black">
-                          {{ selectedProduct?.color?.name ?? "N/A" }}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div
-                    class="flex items-center justify-between w-full text-2xl"
-                  >
-                    <div class="flex flex-col w-full">
-                      <p class="text-[#00000099] text-2xl pb-6">
-                        Size :
-                        <span
-                          class="px-2 py-2 font-bold text-black border-2 border-gray-800 rounded-xl"
-                        >
-                          {{ selectedProduct?.size?.name ?? "N/A" }}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div
-                    class="flex items-center justify-between w-full pb-6 text-2xl"
-                  >
-                    <div class="flex flex-col w-full">
-                      <p class="text-[#00000099]">Selling Price :</p>
-                      <p class="font-bold text-black">
-                        {{ selectedProduct?.selling_price ?? "N/A" }}
-                        LKR
-                      </p>
-                    </div>
-                    <!-- <div class="flex flex-col w-full">
-                      <p class="text-[#00000099]">Cost Price :</p>
-                      <p class="font-bold text-black">
-                        {{ selectedProduct?.cost_price ?? "N/A" }}
-
-                        LKR
-                      </p>
-                    </div> -->
-                  </div>
-
-                  <div
-                    class="flex items-center justify-between w-full pb-6 text-2xl"
-                  >
-                    <div
-                      class="flex flex-col w-full"
-                      v-if="
-                        selectedProduct.discount && selectedProduct.discount > 0
-                      "
-                    >
-                      <p class="text-[#00000099]">Discount Price :</p>
-                      <p class="font-bold text-black">
-                        {{
-                          selectedProduct.selling_price &&
-                          selectedProduct.discount &&
-                          selectedProduct.discount > 0
-                            ? (
-                                selectedProduct.selling_price -
-                                (selectedProduct.selling_price *
-                                  selectedProduct.discount) /
-                                  100
-                              ).toFixed(2)
-                            : selectedProduct.selling_price
-                        }}
-                        LKR
-                      </p>
-                    </div>
-                    <div class="flex flex-col w-full">
-                      <p class="text-[#00000099]">Quantity :</p>
-                      <p class="font-bold text-black">
-                        {{ selectedProduct?.stock_quantity ?? "N/A" }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p class="pb-8 text-2xl font-bold text-black">
-                    <span class="text-[#00000099] font-normal"
-                      >Created On :
-                    </span>
-                    {{ formattedDate }}
-                  </p>
-
-                  <!-- <div class="mt-2">
-                    <input
-                      hidden
-                      type="text"
-                      id="barcodeInput"
-                      v-model="selectedProduct.barcode"
-                      class="w-full px-4 py-2 placeholder-gray-400 border-gray-300 rounded order f focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                    />
-
-                    <button
-                      v-if="HasRole(['Admin', 'Manager'])"
-                      class="w-full px-4 py-3 text-2xl font-semibold tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-                      @click="generateAndPrintBarcode"
-                    >
-                      Print Bar Code
-                    </button>
-                  </div> -->
-
-                </div>
+                
               </div>
 
               <div class="w-full">
@@ -226,6 +68,11 @@
                     <p class="text-md font-bold text-black">
                       {{ selectedProduct?.selling_price ?? "N/A" }}
                       LKR
+                    </p>
+
+                    <p class="text-md font-bold text-black">
+                 (Doller price)    $ {{ selectedProduct?.doller_price ?? "N/A" }}
+
                     </p>
                   </div>
                   <!-- <div

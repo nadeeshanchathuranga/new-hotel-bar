@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Traits\GeneratesUniqueCode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
- 
+
 
 class Product extends Model
 {
@@ -27,6 +27,7 @@ class Product extends Model
         'description',
         'is_promotion',
         'is_beverage',
+        'doller_price',
     ];
 
     // public static function boot()

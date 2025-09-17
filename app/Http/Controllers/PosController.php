@@ -240,6 +240,7 @@ class PosController extends Controller
                 'custom_discount' => $request->input('custom_discount'),
                  'owner_id'   => $request->input('owner_id') ?: null,
                  'owner_discount_value' => $request->input('owner_discount_value') ?: 0,
+                  'isConvertPrice' => $request->boolean('isConvertPrice'),
 
             ]);
 
