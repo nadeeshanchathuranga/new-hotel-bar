@@ -112,7 +112,7 @@
         </div>
       </Link>
 
-      <Link href="/reports" v-if="HasRole(['Admin'])">
+      <Link href="/reports" v-if="HasRole(['Admin', 'Owner'])">
         <div class="dashboard-card bg-[#FF8000]">
           <div class="card-content">
             <div class="icon-container">

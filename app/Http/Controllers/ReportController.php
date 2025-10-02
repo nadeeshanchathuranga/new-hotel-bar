@@ -17,7 +17,7 @@ class ReportController extends Controller
 
   public function index(Request $request)
 {
-    if (!Gate::allows('hasRole', ['Admin'])) {
+    if (!Gate::allows('hasRole', ['Admin','Owner'])) {
         abort(403, 'Unauthorized');
     }
 
