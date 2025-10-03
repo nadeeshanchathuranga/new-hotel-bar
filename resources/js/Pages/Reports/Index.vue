@@ -100,40 +100,12 @@
     <!-- Charts -->
     <div class="flex md:flex-row flex-col items-center justify-center w-full h-full md:space-x-4 md:space-y-0 space-y-4">
       <div class="flex flex-col justify-between items-center md:w-1/3 w-full bg-white border-4 border-black rounded-xl h-[450px]">
-        <div class="overflow-x-auto max-h-[420px] border rounded-xl mt-2">
-  <table id="ownersTbl" class="w-full text-gray-800 bg-white border border-gray-300 rounded-lg shadow-md table-auto">
-    <thead>
-      <tr class="bg-gradient-to-r from-green-700 via-green-600 to-green-700 text-white text-[14px] border-b border-green-800">
-        <th class="p-3 text-left font-semibold">#</th>
-        <th class="p-3 text-left font-semibold">  Name</th>
-      
-      
-        <th class="p-3 text-center font-semibold">Month</th>
-        <th class="p-3 text-center font-semibold">Current Discount</th>
-        
-      </tr>
-    </thead>
-    <tbody class="text-[12px] font-medium">
-      <tr v-for="(o, i) in ownersList" :key="o.id ?? i" class="border-b transition duration-200 hover:bg-gray-100">
-        <td class="p-3 text-center">{{ i + 1 }}</td>
-        <td class="p-3 font-bold">{{ o.name || 'N/A' }}<br>
-          {{ o.code || '-' }}
-        </td>
-        
-       
-        <td class="p-3 text-center">
-          <!-- Show last owner item month -->
-          {{ o.items.length ? o.items[o.items.length - 1].month : '-' }}
-        </td>
-        <td class="p-3 text-center">
-          {{ o.items.length ? o.items[o.items.length - 1].current_discount : '-' }}
-        </td>
-         
-      </tr>
-    </tbody>
-  
-  </table>
-</div>
+        <div class="chart-container w-full p-4">
+          
+          <div class="w-full h-full flex justify-center items-center">
+            <Doughnut :data="chartData4" :options="chartOptions4" />
+          </div>
+        </div>
       </div>
 
       <div class="flex flex-col justify-between items-center md:w-1/3 w-full bg-white border-4 border-black rounded-xl h-[450px]">
@@ -376,7 +348,45 @@
 
 
 
-    
+    <div class="overflow-x-auto max-h-[420px] border rounded-xl mt-2">
+  <table id="ownersTbl" class="w-full text-gray-800 bg-white border border-gray-300 rounded-lg shadow-md table-auto">
+    <thead>
+      <tr class="bg-gradient-to-r from-green-700 via-green-600 to-green-700 text-white text-[14px] border-b border-green-800">
+        <th class="p-3 text-left font-semibold">#</th>
+        <th class="p-3 text-left font-semibold">Owner Name</th>
+        <th class="p-3 text-left font-semibold">Code</th>
+        <th class="p-3 text-center font-semibold">Owner Status</th>
+        <th class="p-3 text-center font-semibold">Month</th>
+        <th class="p-3 text-center font-semibold">Current Discount</th>
+        <th class="p-3 text-center font-semibold">Item Status</th>
+      </tr>
+    </thead>
+    <tbody class="text-[12px] font-medium">
+      <tr v-for="(o, i) in ownersList" :key="o.id ?? i" class="border-b transition duration-200 hover:bg-gray-100">
+        <td class="p-3 text-center">{{ i + 1 }}</td>
+        <td class="p-3 font-bold">{{ o.name || 'N/A' }}</td>
+        <td class="p-3">{{ o.code || '-' }}</td>
+        <td class="p-3 text-center">
+          <span v-if="o.status === 'active'" class="text-green-600 font-semibold">Active</span>
+          <span v-else class="text-red-600 font-semibold">Inactive</span>
+        </td>
+        <td class="p-3 text-center">
+          <!-- Show last owner item month -->
+          {{ o.items.length ? o.items[o.items.length - 1].month : '-' }}
+        </td>
+        <td class="p-3 text-center">
+          {{ o.items.length ? o.items[o.items.length - 1].current_discount : '-' }}
+        </td>
+        <td class="p-3 text-center">
+          <span v-if="o.items.length && o.items[o.items.length - 1].status === 'active'" class="text-green-600 font-semibold">Active</span>
+          <span v-else-if="o.items.length" class="text-red-600 font-semibold">Inactive</span>
+          <span v-else>-</span>
+        </td>
+      </tr>
+    </tbody>
+  
+  </table>
+</div>
 
   </div>
   <Footer />
