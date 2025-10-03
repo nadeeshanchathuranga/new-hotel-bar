@@ -23,6 +23,7 @@ class Sale extends Model
         'kitchen_note',
         'delivery_charge',
         'service_charge',
+        'custom_discount_type',
         'bank_service_charge',
         'cash',
         'order_type',
@@ -71,6 +72,9 @@ class Sale extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
-
+public function owner()
+    {
+        return $this->belongsTo(Owner::class, 'owner_id', 'id');
+    }
 
 }

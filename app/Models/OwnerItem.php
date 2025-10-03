@@ -9,7 +9,7 @@ class OwnerItem extends Model
 {
        use HasFactory;
 
-    protected $fillable = ['owner_id', 'discount_value', 'current_discount', 'status'];
+    protected $fillable = ['owner_id', 'discount_value', 'current_discount','month', 'status'];
 
 
     public function owner() {

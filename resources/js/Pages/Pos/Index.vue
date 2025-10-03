@@ -403,6 +403,31 @@
     </select>
   </div>
 
+ <div class="flex items-center justify-between border-b border-gray-300 pb-3">
+                    <p class="text-xl font-medium text-gray-800">Custom Discount</p>
+                    <div class="flex items-center gap-2">
+                      <CurrencyInput
+                        ref="customDiscountRef"
+                        v-model="custom_discount"
+                        @blur="validateCustomDiscount"
+                        placeholder="Enter value"
+                        class="rounded-md px-3 py-1 text-xl text-gray-900 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <select
+                        ref="customDiscountTypeRef"
+                        v-model="custom_discount_type"
+                        class="px-8 py-1 rounded-md text-xl text-gray-900 focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="fixed">Rs</option>
+                        <option value="percent">%</option>
+                      </select>
+                    </div>
+                  </div>
+
+
+
+
+
   <div class="flex items-center justify-between w-full px-16 pt-4">
     <p class="text-3xl text-black">Total</p>
     <p class="text-3xl text-black">
@@ -712,29 +737,31 @@
   </div>
 
   <PosSuccessModel
-    :open="isSuccessModalOpen"
-    @update:open="handleModalOpenUpdate"
-    :products="selectedTable.products"
-    :cashier="loggedInUser"
-    :customer="customer"
-    :orderId="selectedTable.orderId"
-    :cash="selectedTable.cash"
-    :balance="balance"
-    :subTotal="subtotal"
-    :totalDiscount="totalDiscount"
-    :total="total"
-    :custom_discount="customDiscCalculated"
-    :delivery_charge="selectedTable.delivery_charge"
-    :service_charge="selectedTable.service_charge"
-    :bank_service_charge="selectedTable.bank_service_charge"
-    :selectedTable="selectedTable"
-    :kitchen_note="selectedTable.kitchen_note"
-    :selectedPaymentMethod="selectedPaymentMethod"
-    :order_type="selectedTable.order_type"
-    :owner_discount_value="ownerDiscountValue"
-    :owner_code="ownerCodeValue"
-    :is-convert-price="isConvertPrice"
-  />
+  :open="isSuccessModalOpen"
+  @update:open="handleModalOpenUpdate"
+  :products="selectedTable.products"
+  :cashier="loggedInUser"
+  :customer="customer"
+  :orderId="selectedTable.orderId"
+  :cash="selectedTable.cash"
+  :balance="balance"
+  :subTotal="subtotal"
+  :totalDiscount="totalDiscount"
+  :total="total"
+  :custom_discount="customDiscCalculated"
+  :custom_discount_type="customDiscountType" 
+  :delivery_charge="selectedTable.delivery_charge"
+  :service_charge="selectedTable.service_charge"
+  :bank_service_charge="selectedTable.bank_service_charge"
+  :selectedTable="selectedTable"
+  :kitchen_note="selectedTable.kitchen_note"
+  :selectedPaymentMethod="selectedPaymentMethod"
+  :order_type="selectedTable.order_type"
+  :owner_discount_value="ownerDiscountValue"
+  :owner_code="ownerCodeValue"
+  :is-convert-price="isConvertPrice"
+/>
+
   <AlertModel v-model:open="isAlertModalOpen" :message="message" />
 
   <SelectProductModel
@@ -746,6 +773,9 @@
   />
   <Footer />
 </template>
+ 
+
+
 
 <script setup>
 import Header from "@/Components/custom/Header.vue";
@@ -754,10 +784,8 @@ import Banner from "@/Components/Banner.vue";
 import PosSuccessModel from "@/Components/custom/PosSuccessModel.vue";
 import AlertModel from "@/Components/custom/AlertModel.vue";
 
-import { useForm, router } from "@inertiajs/vue3";
+import { useForm, router, Head, Link } from "@inertiajs/vue3";
 import { ref, onMounted, computed, watch } from "vue";
-import { Head } from "@inertiajs/vue3";
-import { Link } from "@inertiajs/vue3";
 import axios from "axios";
 import CurrencyInput from "@/Components/custom/CurrencyInput.vue";
 import SelectProductModel from "@/Components/custom/SelectProductModel.vue";
@@ -766,7 +794,7 @@ import { generateOrderId } from "@/Utils/Other.js";
 import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/vue";
 
 /* =========================
-   PROPS (declare FIRST)
+   PROPS
 ========================= */
 const props = defineProps({
   loggedInUser: Object,
@@ -778,36 +806,23 @@ const props = defineProps({
   bankCharge: Array,
   serviceCharge: Array,
   owners: Array,
-    isConvertPrice: { type: Boolean, default: false },
+  isConvertPrice: { type: Boolean, default: false },
 });
 
 /* =========================
-   KOT DAILY SEQUENCE HELPERS (ADDED)
-   - Stores {date:'YYYY-MM-DD', seq:N} in localStorage
-   - Resets at local midnight automatically
+   KOT DAILY SEQUENCE (LS)
 ========================= */
 const KOT_SEQUENCE_KEY = "kotDailySequence";
-
 const toDateKey = (d = new Date()) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 };
-
 const getKotSeqState = () => {
-  try {
-    const raw = localStorage.getItem(KOT_SEQUENCE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  try { const raw = localStorage.getItem(KOT_SEQUENCE_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
 };
-
-const saveKotSeqState = (state) => {
-  localStorage.setItem(KOT_SEQUENCE_KEY, JSON.stringify(state));
-};
-
+const saveKotSeqState = (state) => localStorage.setItem(KOT_SEQUENCE_KEY, JSON.stringify(state));
 const getNextKotNumberForToday = () => {
   const today = toDateKey();
   const state = getKotSeqState();
@@ -815,12 +830,11 @@ const getNextKotNumberForToday = () => {
     const fresh = { date: today, seq: 1 };
     saveKotSeqState(fresh);
     return 1;
-    }
+  }
   const next = (Number(state.seq) || 0) + 1;
   saveKotSeqState({ date: today, seq: next });
   return next;
 };
-
 const getCurrentKotNumber = () => {
   const state = getKotSeqState();
   const today = toDateKey();
@@ -845,45 +859,50 @@ const kitchen_note = ref("");
 const delivery_charge = ref("");
 const service_charge = ref("");
 const bank_service_charge = ref("");
-const bankOptions = ref([
-  "Alliance Finance Co PLC", "Amana Bank", "American Express Bank Ltd", "Asia Asset Finance PLC",
-  "Bank of Ceylon", "Bank of China",
-  "CDB", "Cargils Bank Ltd", "Central Bank of Sri Lanka", "Central Finance PLC", "City Bank", "Commercial Bank", "Commercial Credit", "Cooperative Regional Rural Bank LTD",
-  "DFCC Bank PLC", "Deutsche Bank", "Dialog Finance PLC",
-  "Fintrex Finance Limited",
-  "HDFC Bank", "HNB Finance PLC", "HSBC", "Hatton National Bank",
-  "Indian Bank", "Indian Overseas Bank", "Kanrich Finance Bank", "LB Finance", "LOLC Development Finance Plc", "LOLC Finance Plc", "Lanka Credit and Business Finance Limited",
-  "MBSL", "MCB", "Mercantile Investment", "NDB Bank", "NSB", "Nations Trust Bank",
-  "Peoples Leasing and Finance PLC", "Pan Asia Bank", "Peoples Bank", "Public Bank Berhad",
-  "RDB", "Richard Pieris Finance", "SDB", "SENKADAGALA FINANCE", "SMIB", "Sampath Bank", "Sarvodaya Development Finace LTD", "Seylan Bank", "Singer Finance(Lanka) Bank", "Siyapatha Finance PLC", "Softlogic Finance PLC", "Standard Charted Bank", "State Bank of India", "Union Bank"
-]);
 
+// bank list + filter
+const bankOptions = ref([
+  "Alliance Finance Co PLC","Amana Bank","American Express Bank Ltd","Asia Asset Finance PLC",
+  "Bank of Ceylon","Bank of China","CDB","Cargils Bank Ltd","Central Bank of Sri Lanka",
+  "Central Finance PLC","City Bank","Commercial Bank","Commercial Credit",
+  "Cooperative Regional Rural Bank LTD","DFCC Bank PLC","Deutsche Bank","Dialog Finance PLC",
+  "Fintrex Finance Limited","HDFC Bank","HNB Finance PLC","HSBC","Hatton National Bank",
+  "Indian Bank","Indian Overseas Bank","Kanrich Finance Bank","LB Finance",
+  "LOLC Development Finance Plc","LOLC Finance Plc","Lanka Credit and Business Finance Limited",
+  "MBSL","MCB","Mercantile Investment","NDB Bank","NSB","Nations Trust Bank",
+  "Peoples Leasing and Finance PLC","Pan Asia Bank","Peoples Bank","Public Bank Berhad",
+  "RDB","Richard Pieris Finance","SDB","SENKADAGALA FINANCE","SMIB","Sampath Bank",
+  "Sarvodaya Development Finace LTD","Seylan Bank","Singer Finance(Lanka) Bank",
+  "Siyapatha Finance PLC","Softlogic Finance PLC","Standard Charted Bank",
+  "State Bank of India","Union Bank"
+]);
 const query = ref("");
 const filteredBanks = computed(() =>
   query.value
-    ? bankOptions.value.filter(bank => bank.toLowerCase().includes(query.value.toLowerCase()))
+    ? bankOptions.value.filter(b => b.toLowerCase().includes(query.value.toLowerCase()))
     : bankOptions.value
 );
 
-// Tables state - load/save LS
+/* =========================
+   TABLES (LS-backed, fixed)
+========================= */
 const savedTables = JSON.parse(localStorage.getItem("tables")) || [
   {
     id: "default",
-    number: 1, // Live Bill
+    number: 1,
     orderId: generateOrderId(),
     products: [],
     balance: 0,
-    custom_discount: 0.0,
-    custom_discount_type: "percent",
+   custom_discount: 0.0,
+custom_discount_type: "fixed",     // percent only
     kitchen_note: "",
     order_type: "",
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
-    lastKotSnapshot: null, // snapshot of last sent KOT quantities
+    lastKotSnapshot: null,
   },
 ];
-
 const savedNextTableNumber = JSON.parse(localStorage.getItem("nextTableNumber")) || 2;
 const savedSelectedTable = JSON.parse(localStorage.getItem("selectedTable")) || savedTables[0];
 
@@ -891,9 +910,8 @@ const tables = ref(savedTables);
 const nextTableNumber = ref(savedNextTableNumber);
 const selectedTable = ref(savedSelectedTable);
 
-/* === Seed fixed Live Bill + tables 1..25 (numbers 2..26 internally) === */
 const seedFixedTables = () => {
-  // Make sure Live Bill exists
+  // ensure Live Bill
   let def = tables.value.find(t => t.id === "default");
   if (!def) {
     def = {
@@ -903,8 +921,8 @@ const seedFixedTables = () => {
       products: [],
       cash: 0.0,
       balance: 0.0,
-      custom_discount: 0.0,
-      custom_discount_type: "percent",
+     custom_discount: 0.0,
+custom_discount_type: "fixed",
       kitchen_note: "",
       order_type: "",
       delivery_charge: "",
@@ -916,7 +934,7 @@ const seedFixedTables = () => {
     def.lastKotSnapshot = null;
   }
 
-  // Map existing non-default by number
+  // map existing non-default by number
   const byNum = new Map();
   tables.value.filter(t => t.id !== "default").forEach(t => byNum.set(t.number, t));
 
@@ -924,19 +942,20 @@ const seedFixedTables = () => {
   for (let n = 2; n <= 26; n++) {
     if (byNum.has(n)) {
       const t = byNum.get(n);
-      if (!('kotStatus' in t)) t.kotStatus = "pending"; // normalize
+      if (!('kotStatus' in t)) t.kotStatus = "pending";
       if (!('lastKotSnapshot' in t)) t.lastKotSnapshot = null;
+      if (!('custom_discount' in t)) t.custom_discount = 0.0;
       stable.push(t);
     } else {
       stable.push({
         id: `t${n}`,
-        number: n,              // displays as n-1 => 1..25
+        number: n,
         orderId: generateOrderId(),
         products: [],
         cash: 0.0,
         balance: 0.0,
-        custom_discount: 0.0,
-        custom_discount_type: "percent",
+       custom_discount: 0.0,
+custom_discount_type: "fixed",
         kitchen_note: "",
         order_type: "",
         delivery_charge: "",
@@ -949,7 +968,6 @@ const seedFixedTables = () => {
   }
   tables.value = stable;
 
-  // Ensure a valid selection
   if (!selectedTable.value || !tables.value.find(t => t.id === selectedTable.value.id)) {
     selectedTable.value = tables.value[0];
   }
@@ -960,34 +978,17 @@ onMounted(() => {
   document.addEventListener("keypress", handleScannerInput);
 });
 
-watch(
-  tables,
-  (newTables) => {
-    localStorage.setItem("tables", JSON.stringify(newTables));
-  },
-  { deep: true }
-);
+watch(tables, (v) => localStorage.setItem("tables", JSON.stringify(v)), { deep: true });
+watch(nextTableNumber, (v) => localStorage.setItem("nextTableNumber", JSON.stringify(v)));
+watch(selectedTable, (v) => localStorage.setItem("selectedTable", JSON.stringify(v)), { deep: true });
 
-watch(nextTableNumber, (newNextTableNumber) => {
-  localStorage.setItem("nextTableNumber", JSON.stringify(newNextTableNumber));
-});
-
-watch(
-  selectedTable,
-  (newSelectedTable) => {
-    localStorage.setItem("selectedTable", JSON.stringify(newSelectedTable));
-  },
-  { deep: true }
-);
-
-/* === Re-enable KOT whenever items on the current table change === */
+/* Re-enable KOT after any change */
 watch(
   () => selectedTable.value?.products,
   () => {
     const t = selectedTable.value;
     if (!t || t.id === "default") return;
     if (!Array.isArray(t.products)) return;
-    // Any change after a send should allow sending KOT again
     if (t.kotStatus === "sent") {
       t.kotStatus = "pending";
       localStorage.setItem("tables", JSON.stringify(tables.value));
@@ -997,73 +998,42 @@ watch(
 );
 
 /* =========================
-   OWNER DISCOUNT STATE
+   OWNER DISCOUNT
 ========================= */
-const ownerForm = useForm({
-  owner_id: "",
-});
-
+const ownerForm = useForm({ owner_id: "" });
 const ownerFetch = ref({
-  owner_id: null,
-  discount_value: 0,     // monthly allocation (LKR)
-  current_discount: 0,   // already used (LKR)
-  month: "",
-  available: false,
-  message: "",
-  override_amount: 0,    // amount to apply now
+  owner_id: null, discount_value: 0, current_discount: 0,
+  month: "", available: false, message: "", override_amount: 0,
 });
-
 const ownerDiscountApplied = ref(false);
 
-const selectedOwner = computed(() => {
-  return props.owners.find(o => o.id === ownerForm.owner_id) || null;
-});
-
-const ownerCodeValue = computed(() => {
-  return selectedOwner.value ? selectedOwner.value.code : null;
-});
-
+const selectedOwner = computed(() => props.owners.find(o => o.id === ownerForm.owner_id) || null);
+const ownerCodeValue = computed(() => selectedOwner.value ? selectedOwner.value.code : null);
 const ownerBalance = computed(() => {
   const dv = Number(ownerFetch.value.discount_value || 0);
   const cd = Number(ownerFetch.value.current_discount || 0);
   return Math.max(0, dv - cd);
 });
 
-/* Clamp override to remaining balance, show alert if exceeded */
-watch(
-  () => ownerFetch.value.override_amount,
-  (val) => {
-    let n = Number(val);
-    if (isNaN(n) || n < 0) {
-      ownerFetch.value.override_amount = 0;
-      return;
-    }
-    if (n > ownerBalance.value) {
-      ownerFetch.value.override_amount = ownerBalance.value;
-      isAlertModalOpen.value = true;
-      message.value = `Override exceeds remaining balance. Max allowed is ${ownerBalance.value.toFixed(2)} LKR.`;
-    }
-  }
-);
-
-/* =========================
-   OWNER DISCOUNT ACTIONS
-========================= */
-const fetchOwnerDiscount = async () => {
-  if (!ownerForm.owner_id) {
+watch(() => ownerFetch.value.override_amount, (val) => {
+  let n = Number(val);
+  if (isNaN(n) || n < 0) { ownerFetch.value.override_amount = 0; return; }
+  if (n > ownerBalance.value) {
+    ownerFetch.value.override_amount = ownerBalance.value;
     isAlertModalOpen.value = true;
-    message.value = "Please select an owner.";
-    return;
+    message.value = `Override exceeds remaining balance. Max allowed is ${ownerBalance.value.toFixed(2)} LKR.`;
   }
+});
+
+const fetchOwnerDiscount = async () => {
+  if (!ownerForm.owner_id) { isAlertModalOpen.value = true; message.value = "Please select an owner."; return; }
   try {
-    const { data } = await axios.post("/pos/get-owner-discount", {
-      owner_id: ownerForm.owner_id,
-    });
+    const { data } = await axios.post("/pos/get-owner-discount", { owner_id: ownerForm.owner_id });
     ownerFetch.value = {
       owner_id: data.owner_id,
       discount_value: Number(data.discount_value || 0),
       current_discount: Number(data.current_discount || 0),
-      override_amount: 0, // reset to 0 on fetch
+      override_amount: 0,
       month: data.month || "",
       available: !!data.available,
       message: data.message || "",
@@ -1071,63 +1041,26 @@ const fetchOwnerDiscount = async () => {
   } catch (err) {
     isAlertModalOpen.value = true;
     message.value = err.response?.data?.message || "Failed to get owner discount.";
-    ownerFetch.value = {
-      owner_id: null,
-      discount_value: 0,
-      current_discount: 0,
-      month: "",
-      available: false,
-      message: "",
-      override_amount: 0,
-    };
+    ownerFetch.value = { owner_id: null, discount_value: 0, current_discount: 0, month: "", available: false, message: "", override_amount: 0 };
   }
 };
-
 const applyOwnerDiscount = () => {
-  if (!ownerFetch.value.available) {
-    isAlertModalOpen.value = true;
-    message.value = ownerFetch.value.message || "No discount found for this owner.";
-    return;
-  }
+  if (!ownerFetch.value.available) { isAlertModalOpen.value = true; message.value = ownerFetch.value.message || "No discount found for this owner."; return; }
   ownerDiscountApplied.value = true;
 };
-
-const removeOwnerDiscount = () => {
-  ownerDiscountApplied.value = false;
-};
-
+const removeOwnerDiscount = () => { ownerDiscountApplied.value = false; };
 const resetOwnerState = () => {
   ownerForm.owner_id = "";
-  ownerFetch.value = {
-    owner_id: null,
-    discount_value: 0,
-    current_discount: 0,
-    month: "",
-    available: false,
-    message: "",
-    override_amount: 0,
-  };
+  ownerFetch.value = { owner_id: null, discount_value: 0, current_discount: 0, month: "", available: false, message: "", override_amount: 0 };
   ownerDiscountApplied.value = false;
 };
-
-/* This is the amount actually applied into totals */
-const ownerDiscountValue = computed(() => {
-  return ownerDiscountApplied.value ? Number(ownerFetch.value.override_amount || 0) : 0;
-});
+const ownerDiscountValue = computed(() => ownerDiscountApplied.value ? Number(ownerFetch.value.override_amount || 0) : 0);
 
 /* =========================
-   POS LOGIC
+   POS / USER
 ========================= */
 const discount = ref(0);
-
-const customer = ref({
-  name: "",
-  countryCode: "",
-  contactNumber: "",
-  email: "",
-  bdate: "",
-});
-
+const customer = ref({ name: "", countryCode: "", contactNumber: "", email: "", bdate: "" });
 const employee_id = ref("");
 const selectedPaymentMethod = ref("cash");
 
@@ -1135,13 +1068,9 @@ const refreshData = async () => {
   if (selectedTable.value?.id === "default") {
     const today = new Date();
     const formattedDate = `${today.getFullYear().toString().slice(-2)}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
-
     const lastDate = localStorage.getItem("lastOrderDate");
     let existingOrderId = selectedTable.value.orderId;
-
-    if (lastDate !== formattedDate) {
-      existingOrderId = generateOrderId();
-    }
+    if (lastDate !== formattedDate) existingOrderId = generateOrderId();
 
     const defaultTable = {
       id: "default",
@@ -1150,8 +1079,8 @@ const refreshData = async () => {
       products: [],
       cash: 0.0,
       balance: 0.0,
-      custom_discount: 0.0,
-      custom_discount_type: "percent",
+   custom_discount: 0.0,
+custom_discount_type: "fixed",   // percent-only
       kitchen_note: "",
       order_type: "",
       delivery_charge: "",
@@ -1163,18 +1092,10 @@ const refreshData = async () => {
 
     selectedTable.value = defaultTable;
 
-    const defaultIndex = tables.value.findIndex(table => table.id === "default");
-    if (defaultIndex !== -1) {
-      tables.value[defaultIndex] = defaultTable;
-    }
+    const idx = tables.value.findIndex(t => t.id === "default");
+    if (idx !== -1) tables.value[idx] = defaultTable;
 
-    customer.value = {
-      name: "",
-      contactNumber: "",
-      email: "",
-      bdate: "",
-    };
-
+    customer.value = { name: "", contactNumber: "", email: "", bdate: "" };
     appliedCoupon.value = null;
     cash.value = 0;
     selectedPaymentMethod.value = "cash";
@@ -1185,89 +1106,53 @@ const refreshData = async () => {
 
     try {
       await router.reload({
-        only: ['loggedInUser', 'allcategories', 'allemployee', 'colors', 'sizes', 'delivery', 'serviceCharge', 'bankCharge'],
-        preserveState: false,
-        preserveScroll: false
+        only: ["loggedInUser","allcategories","allemployee","colors","sizes","delivery","serviceCharge","bankCharge"],
+        preserveState: false, preserveScroll: false
       });
-    } catch (error) {
-      console.error("Error refreshing data:", error);
+    } catch (e) {
+      console.error("Error refreshing data:", e);
       window.location.reload();
     }
-
     resetOwnerState();
   }
 };
 
 const removeProduct = (id) => {
-  if (!selectedTable.value) {
-    console.error("No table selected");
-    return;
-  }
-  const initialLength = selectedTable.value.products.length;
-  selectedTable.value.products = selectedTable.value.products.filter(
-    (item) => item.id !== id
-  );
-  if (selectedTable.value.products.length < initialLength) {
-    console.log(`Product with ID ${id} removed successfully.`);
-  } else {
-    console.warn(`Product with ID ${id} not found in the selected table.`);
-  }
+  if (!selectedTable.value) return;
+  const initial = selectedTable.value.products.length;
+  selectedTable.value.products = selectedTable.value.products.filter(item => item.id !== id);
+  if (selectedTable.value.products.length === initial) console.warn(`Product ${id} not found`);
 };
-
-const removeCoupon = () => {
-  appliedCoupon.value = null;
-  couponForm.code = "";
-};
-
+const removeCoupon = () => { appliedCoupon.value = null; couponForm.code = ""; };
 const incrementQuantity = (id) => {
-  if (!selectedTable.value) {
-    console.error("No table selected");
-    return;
-  }
-  const product = selectedTable.value.products.find((item) => item.id === id);
-  if (product) product.quantity += 1;
+  if (!selectedTable.value) return;
+  const p = selectedTable.value.products.find(item => item.id === id);
+  if (p) p.quantity += 1;
 };
-
 const decrementQuantity = (id) => {
-  if (!selectedTable.value) {
-    console.error("No table selected");
-    return;
-  }
-  const product = selectedTable.value.products.find((item) => item.id === id);
-  if (product) {
-    if (product.quantity > 1) product.quantity -= 1;
-    else console.warn(`Product quantity for ID ${id} is already at the minimum.`);
-  }
+  if (!selectedTable.value) return;
+  const p = selectedTable.value.products.find(item => item.id === id);
+  if (p) { if (p.quantity > 1) p.quantity -= 1; }
 };
 
-const addTable = () => {
-  // kept for compatibility; UI no longer shows the button
-};
-
-const selectTable = (table) => {
-  selectedTable.value = table;
-};
-
+const addTable = () => {};
+const selectTable = (table) => { selectedTable.value = table; };
 const removeTable = (index) => {
-  // kept for compatibility; tiles are fixed and not removed in UI
-  const removedTable = tables.value[index];
-  localStorage.setItem(`removedTable_${removedTable.number}`, JSON.stringify(removedTable));
+  const removed = tables.value[index];
+  localStorage.setItem(`removedTable_${removed.number}`, JSON.stringify(removed));
 };
 
-/* Clear (do not delete) the currently selected table after confirm */
 const removeSelectedTable = () => {
   if (!selectedTable.value) return;
-  const idx = tables.value.findIndex((table) => table.id === selectedTable.value.id);
-
-  // Reset the selected table in place
+  const idx = tables.value.findIndex(t => t.id === selectedTable.value.id);
   const cleared = {
     ...tables.value[idx],
     orderId: generateOrderId(),
     products: [],
     cash: 0.0,
     balance: 0.0,
-    custom_discount: 0.0,
-    custom_discount_type: "percent",
+   custom_discount: 0.0,
+custom_discount_type: "fixed",    // percent-only
     kitchen_note: "",
     order_type: "",
     isConvertPrice: "",
@@ -1276,40 +1161,31 @@ const removeSelectedTable = () => {
     bank_service_charge: "",
     lastKotSnapshot: null,
   };
-
   tables.value[idx] = cleared;
   selectedTable.value = cleared;
 };
 
-const handleModalOpenUpdate = (newValue) => {
-  isSuccessModalOpen.value = newValue;
-  if (!newValue) {
-    // Clear current table and move selection to Live Bill to remove blue highlight
+const handleModalOpenUpdate = (v) => {
+  isSuccessModalOpen.value = v;
+  if (!v) {
     removeSelectedTable();
     seedFixedTables();
-    selectedTable.value = tables.value[0]; // Live Bill
+    selectedTable.value = tables.value[0];
     cash.value = 0;
     refreshData();
   }
 };
 
 const orderId = computed(() => {
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from({ length: 6 }, () => characters.charAt(Math.floor(Math.random() * characters.length))).join("");
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join("");
 });
 
 const submitOrder = async () => {
   if (!total.value || parseFloat(total.value) <= 0) {
-    isAlertModalOpen.value = true;
-    message.value = "Total amount cannot be zero or less. Please check the bill.";
-    return;
+    isAlertModalOpen.value = true; message.value = "Total amount cannot be zero or less. Please check the bill."; return;
   }
-
-  if (balance.value < 0) {
-    isAlertModalOpen.value = true;
-    message.value = "Cash is not enough";
-    return;
-  }
+  if (balance.value < 0) { isAlertModalOpen.value = true; message.value = "Cash is not enough"; return; }
 
   try {
     await axios.post("/pos/submit", {
@@ -1318,8 +1194,10 @@ const submitOrder = async () => {
       employee_id: employee_id.value,
       paymentMethod: selectedPaymentMethod.value,
       userId: props.loggedInUser.id,
-      orderId: selectedTable.value.orderId,
-      custom_discount: customDiscCalculated.value,
+      orderId: selectedTable.value.orderId,   
+         custom_discount: selectedTable.value.custom_discount, 
+  custom_discount_type: selectedTable.value.custom_discount_type,
+      // now a computed amount
       cash: selectedTable.value.cash,
       bank_name: selectedTable.value.bank_name,
       card_last4: selectedTable.value.card_last4,
@@ -1337,21 +1215,16 @@ const submitOrder = async () => {
 
     isSuccessModalOpen.value = true;
     selectedTable.value.orderId = generateOrderId();
-    customer.value = {
-      name: "",
-      countryCode: "",
-      contactNumber: "",
-      email: "",
-    };
+    customer.value = { name: "", countryCode: "", contactNumber: "", email: "" };
   } catch (error) {
-    if (error.response?.status === 423) {
-      isAlertModalOpen.value = true;
-      message.value = error.response.data.message;
-    }
-    console.error("Error submitting customer details:", error.response?.data || error.message);
+    if (error.response?.status === 423) { isAlertModalOpen.value = true; message.value = error.response.data.message; }
+    console.error("Error submitting:", error.response?.data || error.message);
   }
 };
 
+/* =========================
+   SUBTOTAL / DISCOUNTS / TOTAL
+========================= */
 const subtotal = computed(() => {
   if (!selectedTable.value) return "0.00";
   return selectedTable.value.products
@@ -1361,7 +1234,6 @@ const subtotal = computed(() => {
 
 const totalDiscount = computed(() => {
   if (!selectedTable.value) return "0.00";
-
   const productDiscount = selectedTable.value.products.reduce((total, item) => {
     if (item.discount && item.discount > 0 && item.apply_discount === true) {
       const discountAmount = (parseFloat(item.selling_price) - parseFloat(item.discounted_price)) * item.quantity;
@@ -1369,54 +1241,54 @@ const totalDiscount = computed(() => {
     }
     return total;
   }, 0);
-
   const couponDiscount = appliedCoupon.value ? Number(appliedCoupon.value.discount) : 0;
   const ownerDisc = ownerDiscountValue.value || 0;
-
   return (productDiscount + couponDiscount + ownerDisc).toFixed(2);
 });
 
-const total = computed(() => {
+/* ---- percent-only custom discount ---- */
+const customDiscCalculated = computed(() => {
+  const t = selectedTable.value;
+  if (!t) return "0.00";
+  const sub = parseFloat(subtotal.value) || 0;
+  const val = Number(t.custom_discount) || 0;
+
+  let amt = 0;
+  if (t.custom_discount_type === "percent") {
+    amt = (sub * val) / 100;
+  } else { // fixed
+    amt = Math.min(val, sub);
+  }
+  return amt.toFixed(2);
+});
+
+
+ const total = computed(() => {
   const subtotalValue = parseFloat(subtotal.value) || 0;
   const discountValue = parseFloat(totalDiscount.value) || 0;
-  const customDiscount = parseFloat(selectedTable.value.custom_discount) || 0;
 
-  let customValue = 0;
-  if (selectedTable.value.custom_discount_type === "percent") {
-    customValue = (subtotalValue * customDiscount) / 100;
-  } else if (selectedTable.value.custom_discount_type === "fixed") {
-    customValue = customDiscount;
-  }
+  // NEW: custom discount as computed amount (handles Rs or %)
+  const customValue = parseFloat(customDiscCalculated.value) || 0;
 
+  // delivery (only for pickup)
   let deliveryChargeValue = 0;
-  if (selectedTable.value.order_type === "pickup") {
-    deliveryChargeValue = parseFloat(selectedTable.value.delivery_charge) || 0;
+  if (selectedTable.value?.order_type === "pickup") {
+    deliveryChargeValue = parseFloat(selectedTable.value?.delivery_charge) || 0;
   }
 
-  const serviceChargeRate = parseFloat(selectedTable.value.service_charge) || 0;
+  // service charge (percent of subtotal)
+  const serviceChargeRate = parseFloat(selectedTable.value?.service_charge) || 0;
   const serviceChargeValue = (subtotalValue * serviceChargeRate) / 100;
 
   const preBankTotal = subtotalValue - discountValue - customValue + deliveryChargeValue + serviceChargeValue;
 
-  const bankServiceChargeRate = parseFloat(selectedTable.value.bank_service_charge) || 0;
+  // bank service charge (percent of pre-bank total)
+  const bankServiceChargeRate = parseFloat(selectedTable.value?.bank_service_charge) || 0;
   const bankServiceChargeAmount = (preBankTotal * bankServiceChargeRate) / 100;
 
   return (preBankTotal + bankServiceChargeAmount).toFixed(2);
 });
 
-const customDiscCalculated = computed(() => {
-  const subtotalValue = parseFloat(subtotal.value) || 0;
-  const customDiscount = parseFloat(selectedTable.value.custom_discount) || 0;
-
-  let customValue = 0;
-  if (selectedTable.value.custom_discount_type === "percent") {
-    customValue = (subtotalValue * customDiscount) / 100;
-  } else if (selectedTable.value.custom_discount_type === "fixed") {
-    customValue = customDiscount;
-  }
-
-  return customValue.toFixed(2);
-});
 
 const balance = computed(() => {
   if (!selectedTable.value) return 0;
@@ -1425,184 +1297,170 @@ const balance = computed(() => {
 });
 
 /* =========================
+   PERCENT-ONLY VALIDATION
+========================= */
+const validateCustomDiscount = () => {
+  const t = selectedTable.value;
+  if (!t) return;
+  let v = Number(t.custom_discount);
+  if (isNaN(v) || v < 0) v = 0;
+
+  if (t.custom_discount_type === "percent") {
+    if (v > 100) v = 100;
+  } else { // fixed
+    const sub = parseFloat(subtotal.value) || 0;
+    if (v > sub) v = sub; // can't exceed subtotal
+  }
+  t.custom_discount = Number(v.toFixed(2));
+};
+
+// keep live clamping while typing
+watch(
+  () => [selectedTable.value?.custom_discount, selectedTable.value?.custom_discount_type, subtotal.value],
+  () => validateCustomDiscount(),
+  { deep: true }
+);
+
+/* live clamp while typing (optional but helpful) */
+watch(
+  () => selectedTable.value?.custom_discount,
+  (val) => {
+    if (!selectedTable.value) return;
+    let v = Number(val);
+    if (isNaN(v)) v = 0;
+    if (v < 0) v = 0;
+    if (v > 100) v = 100;
+    selectedTable.value.custom_discount = v;
+  }
+);
+
+/* =========================
    COUPON & BARCODE
 ========================= */
-const form = useForm({
-  employee_id: "",
-  barcode: "",
-});
-
-const couponForm = useForm({
-  code: "",
-});
+const form = useForm({ employee_id: "", barcode: "" });
+const couponForm = useForm({ code: "" });
 
 const submitCoupon = async () => {
   try {
-    const response = await axios.post(route("pos.getCoupon"), {
-      code: couponForm.code,
-    });
-
-    const { coupon: fetchedCoupon, error: fetchedError } = response.data;
-
+    const { data } = await axios.post(route("pos.getCoupon"), { code: couponForm.code });
+    const { coupon: fetchedCoupon, error: fetchedError } = data;
     if (fetchedCoupon) {
       appliedCoupon.value = fetchedCoupon;
-      products.value.forEach((product) => {
-        product.apply_discount = false;
-      });
+      products.value.forEach((p) => { p.apply_discount = false; });
     } else {
-      isAlertModalOpen.value = true;
-      message.value = fetchedError;
-      error.value = fetchedError;
+      isAlertModalOpen.value = true; message.value = fetchedError; error.value = fetchedError;
     }
   } catch (err) {
-    if (err.response?.status === 422) {
-      isAlertModalOpen.value = true;
-      message.value = err.response.data.message;
-    }
+    if (err.response?.status === 422) { isAlertModalOpen.value = true; message.value = err.response.data.message; }
   }
 };
 
 // Barcode scan handling
-let barcode = "";
-let timeout;
-
+let barcode = ""; let timeout;
 const submitBarcode = async () => {
   try {
-    const response = await axios.post(route("pos.getProduct"), {
-      barcode: form.barcode,
-    });
-
-    const { product: fetchedProduct, error: fetchedError } = response.data;
-
+    const { data } = await axios.post(route("pos.getProduct"), { barcode: form.barcode });
+    const { product: fetchedProduct, error: fetchedError } = data;
     if (fetchedProduct) {
-      if (fetchedProduct.stock_quantity < 1) {
-        isAlertModalOpen.value = true;
-        message.value = "Product is out of stock";
-        return;
-      }
-
-      const existingProduct = products.value.find((item) => item.id === fetchedProduct.id);
-
-      if (existingProduct) {
-        existingProduct.quantity += 1;
-      } else {
-        products.value.push({
-          ...fetchedProduct,
-          quantity: 1,
-          apply_discount: false,
-        });
-      }
-
-      product.value = fetchedProduct;
-      error.value = null;
+      if (fetchedProduct.stock_quantity < 1) { isAlertModalOpen.value = true; message.value = "Product is out of stock"; return; }
+      const existing = products.value.find((i) => i.id === fetchedProduct.id);
+      if (existing) existing.quantity += 1;
+      else products.value.push({ ...fetchedProduct, quantity: 1, apply_discount: false });
+      product.value = fetchedProduct; error.value = null;
     } else {
-      isAlertModalOpen.value = true;
-      message.value = fetchedError;
-      error.value = fetchedError;
+      isAlertModalOpen.value = true; message.value = fetchedError; error.value = fetchedError;
     }
   } catch (err) {
-    if (err.response?.status === 422) {
-      isAlertModalOpen.value = true;
-      message.value = err.response.data.message;
-    }
+    if (err.response?.status === 422) { isAlertModalOpen.value = true; message.value = err.response.data.message; }
     error.value = "An unexpected error occurred. Please try again.";
   }
 };
-
 const handleScannerInput = (event) => {
   clearTimeout(timeout);
-  if (event.key === "Enter") {
-    form.barcode = barcode;
-    submitBarcode();
-    barcode = "";
-  } else {
-    barcode += event.key;
-  }
-  timeout = setTimeout(() => {
-    barcode = "";
-  }, 100);
+  if (event.key === "Enter") { form.barcode = barcode; submitBarcode(); barcode = ""; }
+  else { barcode += event.key; }
+  timeout = setTimeout(() => { barcode = ""; }, 100);
 };
-
-onMounted(() => {
-  document.addEventListener("keypress", handleScannerInput);
-});
+onMounted(() => { document.addEventListener("keypress", handleScannerInput); });
 
 /* =========================
    ITEM DISCOUNTS & SELECT
 ========================= */
 const applyDiscount = (id) => {
   if (!selectedTable.value) return;
-  const p = selectedTable.value.products.find((item) => item.id === id);
+  const p = selectedTable.value.products.find((i) => i.id === id);
   if (p) p.apply_discount = true;
 };
-
 const removeDiscount = (id) => {
   if (!selectedTable.value) return;
-  const p = selectedTable.value.products.find((item) => item.id === id);
+  const p = selectedTable.value.products.find((i) => i.id === id);
   if (p) p.apply_discount = false;
 };
 
-
-
-
-
 const handleSelectedProducts = (selectedProducts) => {
   if (!selectedTable.value) return;
-
   selectedProducts.forEach((fetchedProduct) => {
-    const existingProduct = selectedTable.value.products.find((item) => item.id === fetchedProduct.id);
-    if (existingProduct) {
-      existingProduct.quantity += 1;
+    const existing = selectedTable.value.products.find((i) => i.id === fetchedProduct.id);
+    if (existing) {
+      existing.quantity += 1;
     } else {
-      const p = {
-        ...fetchedProduct,
-        quantity: 1,
-        apply_discount: false,
-      };
-      // cache base prices
+      const p = { ...fetchedProduct, quantity: 1, apply_discount: false };
       p._lkr_price = Number(fetchedProduct.selling_price || 0);
       p._usd_price = Number(fetchedProduct.doller_price || 0);
-
-      // set active price based on current mode
       p.selling_price = isConvertPrice.value ? p._usd_price : p._lkr_price;
-
-      // recompute discounted price from active price
       if (p.discount && Number(p.discount) > 0) {
         p.discounted_price = Number((Number(p.selling_price) * (100 - Number(p.discount))) / 100).toFixed(2);
       } else {
         p.discounted_price = Number(p.selling_price).toFixed(2);
       }
-
       selectedTable.value.products.push(p);
     }
   });
 };
 
+/* =========================
+   PRICE MODE (LKR/USD)
+========================= */
+const recalcDiscounted = (p) => {
+  if (p?.discount && Number(p.discount) > 0) {
+    p.discounted_price = Number((Number(p.selling_price) * (100 - Number(p.discount))) / 100).toFixed(2);
+  } else {
+    p.discounted_price = Number(p.selling_price).toFixed(2);
+  }
+};
+const updatePricesForMode = () => {
+  if (!selectedTable.value || !Array.isArray(selectedTable.value.products)) return;
+  selectedTable.value.products.forEach((p) => {
+    if (p._lkr_price == null) p._lkr_price = Number(p.selling_price || 0);
+    if (p._usd_price == null) p._usd_price = Number(p.doller_price || 0);
+    p.selling_price = isConvertPrice.value ? p._usd_price : p._lkr_price;
+    recalcDiscounted(p);
+  });
+};
+const toggleMode = () => { isConvertPrice.value = !isConvertPrice.value; updatePricesForMode(); };
+const setMode = (value) => { isConvertPrice.value = value; updatePricesForMode(); };
 
 
+// PROXY fields used by the template
+const custom_discount = computed({
+  get: () => Number(selectedTable.value?.custom_discount ?? 0),
+  set: (v) => { if (selectedTable.value) selectedTable.value.custom_discount = Number(v) || 0; }
+});
 
-
-
-
-
-
-
-
+const custom_discount_type = computed({
+  get: () => selectedTable.value?.custom_discount_type ?? "fixed",
+  set: (v) => { if (selectedTable.value) selectedTable.value.custom_discount_type = v === "percent" ? "percent" : "fixed"; }
+});
 
 /* =========================
-   KOT HELPERS (Snapshot-based)
+   KOT HELPERS / PRINT
 ========================= */
-/** Build a plain { [productId]: qty } snapshot for a table */
 const getKotSnapshot = (table) => {
   if (!table || !Array.isArray(table.products)) return {};
   const snap = {};
-  table.products.forEach(p => {
-    snap[p.id] = Number(p.quantity) || 0;
-  });
+  table.products.forEach(p => { snap[p.id] = Number(p.quantity) || 0; });
   return snap;
 };
-
-/** Return items that increased since the last KOT */
 const getKotDelta = (table) => {
   if (!table) return [];
   const prev = table.lastKotSnapshot || {};
@@ -1612,67 +1470,15 @@ const getKotDelta = (table) => {
     const before = Number(prev[p.id] || 0);
     const now = Number(curr[p.id] || 0);
     const diff = now - before;
-    if (diff > 0) {
-      deltas.push({ id: p.id, name: p.name, delta: diff });
-    }
+    if (diff > 0) deltas.push({ id: p.id, name: p.name, delta: diff });
   });
   return deltas;
 };
-
-
-
-
-const recalcDiscounted = (p) => {
-  // if a % discount exists, recompute discounted_price from current selling_price
-  if (p?.discount && Number(p.discount) > 0) {
-    p.discounted_price = Number((Number(p.selling_price) * (100 - Number(p.discount))) / 100).toFixed(2);
-  } else {
-    p.discounted_price = Number(p.selling_price).toFixed(2);
-  }
-};
-
-const updatePricesForMode = () => {
-  if (!selectedTable.value || !Array.isArray(selectedTable.value.products)) return;
-
-  selectedTable.value.products.forEach((p) => {
-    // cache the original LKR/USD once
-    if (p._lkr_price == null) p._lkr_price = Number(p.selling_price || 0);
-    if (p._usd_price == null) p._usd_price = Number(p.doller_price || 0);
-
-    // swap visible/used price
-    p.selling_price = isConvertPrice.value ? p._usd_price : p._lkr_price;
-
-    // keep discounted_price consistent with the active price
-    recalcDiscounted(p);
-  });
-};
-
-
-
-
-
-
-const toggleMode = () => {
-  isConvertPrice.value = !isConvertPrice.value;
-  updatePricesForMode();
-};
-
-const setMode = (value) => {
-  isConvertPrice.value = value;
-  updatePricesForMode();
-};
-
-
-
-/** Return true if there are changes vs. last sent snapshot */
 const hasKotChanges = (table) => {
   const snap = table?.lastKotSnapshot || null;
   const curr = getKotSnapshot(table);
   const currKeys = Object.keys(curr);
-  if (!snap) {
-    // No snapshot => if there are products, consider it as "changes present"
-    return currKeys.length > 0;
-  }
+  if (!snap) return currKeys.length > 0;
   const snapKeys = Object.keys(snap);
   if (snapKeys.length !== currKeys.length) return true;
   for (const k of currKeys) {
@@ -1681,238 +1487,81 @@ const hasKotChanges = (table) => {
   }
   return false;
 };
-
-/* === KOT enable/disable helper (updated) === */
 const isKOTDisabled = (table) => {
   if (!table || table.id === "default") return true;
   if (!table.products || table.products.length === 0) return true;
-  // Enable only when at least one item's quantity increased
   return getKotDelta(table).length === 0;
 };
-
-/* =========================
-   TABLE KOT PRINT (UPDATED with daily sequence + note on top)
-========================= */
 const sendKOT = (table) => {
   try {
-    if (!table || table.id === "default") {
-      isAlertModalOpen.value = true;
-      message.value = "Select a table to print KOT.";
-      return;
-    }
-    if (!table.products || table.products.length === 0) {
-      isAlertModalOpen.value = true;
-      message.value = "No items to send to kitchen for this table.";
-      return;
-    }
-
-    // Only print increased items since last KOT
+    if (!table || table.id === "default") { isAlertModalOpen.value = true; message.value = "Select a table to print KOT."; return; }
+    if (!table.products || table.products.length === 0) { isAlertModalOpen.value = true; message.value = "No items to send to kitchen for this table."; return; }
     const deltas = getKotDelta(table);
-    if (deltas.length === 0) {
-      isAlertModalOpen.value = true;
-      message.value = "No increased items to send to kitchen.";
-      return;
-    }
+    if (deltas.length === 0) { isAlertModalOpen.value = true; message.value = "No increased items to send to kitchen."; return; }
 
-    // NEW: Daily KOT number (resets at midnight)
     const kotNo = getNextKotNumberForToday();
     const now = new Date();
     const dateStr = now.toLocaleDateString();
     const timeStr = now.toLocaleTimeString();
-
-    const productRows = deltas
-      .map((d) => `
-        <tr>
-          <td>${d.name}</td>
-          <td style="text-align:center;">${d.delta}</td>
-        </tr>
-      `)
-      .join("");
-
+    const productRows = deltas.map((d) => `
+      <tr><td>${d.name}</td><td style="text-align:center;">${d.delta}</td></tr>
+    `).join("");
     const orderType =
-      table.order_type === "takeaway"
-        ? "Takeaway"
-        : table.order_type === "pickup"
-        ? "Delivery"
-        : "Dine In";
-
-    const noteBlock = table.kitchen_note
-      ? `<div class="note"><b>Kitchen Note:</b> ${table.kitchen_note}</div>`
-      : "";
+      table.order_type === "takeaway" ? "Takeaway" :
+      table.order_type === "pickup" ? "Delivery" : "Dine In";
+    const noteBlock = table.kitchen_note ? `<div class="note"><b>Kitchen Note:</b> ${table.kitchen_note}</div>` : "";
 
     const receiptHTML = `
-      <!doctype html>
-
-      <!doctype html>
+<!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>KOT</title>
-    <style>
-      /* ---------- PRINT ---------- */
-      @media print {
-        body {
-          margin: 0;
-          padding: 0;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        @page {
-          size: 80mm auto;
-          margin: 0;
-        }
-      }
-
-      /* ---------- GLOBAL ---------- */
-      body {
-        background: #fff;
-        font-size: 12px;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 10px;
-        color: #000;
-      }
-
-      h1 {
-        text-align: center;
-        margin: 0 0 10px 0;
-        font-size: 18px;
-      }
-
-      .row {
-        display: flex;
-        justify-content: space-between;
-        margin: 6px 0;
-        font-size: 12px;
-      }
-
-      .badge {
-        border: 1px solid #000;
-        padding: 3px 5px;
-        text-align: center;
-        margin: 6px 0;
-        font-weight: bold;
-        font-size: 11px;
-      }
-
-      .kot-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 10px;
-        font-size: 12px;
-      }
-
-      .kot-head .cell {
-        padding: 4px 6px;
-      }
-
-      .note {
-        border: 1px dashed #000;
-        padding: 8px;
-        margin: 10px 0;
-        font-weight: bold;
-        font-size: 12px;
-      }
-
-      /* ---------- TABLE ---------- */
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 8px;
-        font-size: 12px;
-      }
-
-      thead th {
-        text-align: left;
-        padding: 6px 8px;
-        font-size: 12px;
-        border-bottom: 2px solid #000;
-      }
-
-      thead th:last-child {
-        text-align: center;
-        width: 40px;
-      }
-
-      /* ✅ tbody styling */
-      tbody {
-        display: table-row-group;
-        background: #fff;
-        font-size: 12px; /* consistent body font */
-      }
-
-      tbody tr {
-        border-bottom: 1px dashed #000;
-      }
-
-      tbody td {
-        padding: 6px 8px;
-        font-size: 13px;
-        vertical-align: top;
-      }
-
-      tbody td:first-child {
-        text-align: left;
-      }
-
-      tbody td:last-child {
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>KOT Note - (${String(kotNo).padStart(3,'0')})</h1>
-
-    <div class="kot-head">
-      <div class="cell"><b>Date:</b> ${dateStr}</div>
-      <div class="cell"><b>Time:</b> ${timeStr}</div>
-      <div class="cell"><b>Order:</b> ${table.orderId}</div>
-      <div class="cell"><b>Table:</b> ${table.number - 1}</div>
-      <div class="cell"><b>Type:</b> ${orderType}</div>
-    </div>
-
-    ${noteBlock}
-
-    <table>
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th style="text-align:center;">Qty</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${productRows}
-      </tbody>
-    </table>
-  </body>
-</html>
-
-    `;
-
+<head>
+  <meta charset="utf-8" />
+  <title>KOT</title>
+  <style>
+    @media print { body{margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;} @page{size:80mm auto;margin:0;} }
+    body{background:#fff;font-size:12px;font-family:Arial,sans-serif;margin:0;padding:10px;color:#000;}
+    h1{text-align:center;margin:0 0 10px 0;font-size:18px;}
+    .badge{border:1px solid #000;padding:3px 5px;text-align:center;margin:6px 0;font-weight:bold;font-size:11px;}
+    .kot-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;}
+    .kot-head .cell{padding:4px 6px;}
+    .note{border:1px dashed #000;padding:8px;margin:10px 0;font-weight:bold;font-size:12px;}
+    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;}
+    thead th{text-align:left;padding:6px 8px;font-size:12px;border-bottom:2px solid #000;}
+    thead th:last-child{text-align:center;width:40px;}
+    tbody{display:table-row-group;background:#fff;font-size:12px;}
+    tbody tr{border-bottom:1px dashed #000;}
+    tbody td{padding:6px 8px;font-size:13px;vertical-align:top;}
+    tbody td:first-child{text-align:left;}
+    tbody td:last-child{text-align:center;}
+  </style>
+</head>
+<body>
+  <h1>KOT Note - (${String(kotNo).padStart(3,'0')})</h1>
+  <div class="kot-head">
+    <div class="cell"><b>Date:</b> ${dateStr}</div>
+    <div class="cell"><b>Time:</b> ${timeStr}</div>
+    <div class="cell"><b>Order:</b> ${table.orderId}</div>
+    <div class="cell"><b>Table:</b> ${table.number - 1}</div>
+    <div class="cell"><b>Type:</b> ${orderType}</div>
+  </div>
+  ${noteBlock}
+  <table>
+    <thead><tr><th>Product</th><th style="text-align:center;">Qty</th></tr></thead>
+    <tbody>${productRows}</tbody>
+  </table>
+</body>
+</html>`;
     const w = window.open("", "_blank");
-    if (!w) {
-      isAlertModalOpen.value = true;
-      message.value = "Popup blocked. Allow popups to print KOT.";
-      return;
-    }
-    w.document.open();
-    w.document.write(receiptHTML);
-    w.document.close();
+    if (!w) { isAlertModalOpen.value = true; message.value = "Popup blocked. Allow popups to print KOT."; return; }
+    w.document.open(); w.document.write(receiptHTML); w.document.close();
     w.onload = () => {
-      w.focus();
-      w.print();
-      w.close();
-
-      // mark as sent AFTER print + save snapshot
+      w.focus(); w.print(); w.close();
       table.kotStatus = "sent";
       table.lastKotSnapshot = getKotSnapshot(table);
       localStorage.setItem("tables", JSON.stringify(tables.value));
     };
   } catch (err) {
-    isAlertModalOpen.value = true;
-    message.value = "Failed to print KOT.";
+    isAlertModalOpen.value = true; message.value = "Failed to print KOT.";
     console.error("KOT print error:", err?.message || err);
   }
 };
@@ -1922,25 +1571,17 @@ const sendKOT = (table) => {
 ========================= */
 const searchCustomer = async () => {
   let contact = customer.value.contactNumber;
-  customer.value = {
-    name: "",
-    countryCode: "",
-    contactNumber: contact,
-    email: "",
-  };
+  customer.value = { name: "", countryCode: "", contactNumber: contact, email: "" };
   try {
-    const response = await axios.post("/api/check-customer", {
-      contactNumber: contact,
-    });
-
-    if (response.data.customer) {
-      const c = response.data.customer;
+    const { data } = await axios.post("/api/check-customer", { contactNumber: contact });
+    if (data.customer) {
+      const c = data.customer;
       customer.value.name = c.name;
       customer.value.email = c.email;
       customer.value.bdate = c.bdate;
     }
-  } catch (error) {
-    console.error("Error fetching customer:", error.response?.data || error.message);
+  } catch (e) {
+    console.error("Error fetching customer:", e.response?.data || e.message);
   }
 };
 </script>

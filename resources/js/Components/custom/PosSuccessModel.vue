@@ -95,7 +95,7 @@ const props = defineProps({
   subTotal: String,
   totalDiscount: String,
   total: String,
-  custom_discount: Number,
+    custom_discount: Number,
   custom_discount_type: String,
   kitchen_note: String,
   delivery_charge: String,
@@ -111,6 +111,21 @@ const props = defineProps({
   // NEW: bind from parent to decide USD vs LKR
   isConvertPrice: { type: Boolean, default: false },
 });
+
+
+ let totalDiscountValue = 0;
+    if (Number(props.custom_discount || 0)) {
+      if (props.custom_discount_type === 'percent') {
+        // If percentage, calculate from subtotal
+        const subTotalNum = Number(props.subTotal || 0);
+        totalDiscountValue = (subTotalNum * Number(props.custom_discount)) / 100;
+      } else {
+        // If fixed amount
+        totalDiscountValue = Number(props.custom_discount);
+      }
+      // Add owner discount
+      totalDiscountValue += Number(props.owner_discount_value || 0);
+    }
 
 // currency helpers
 const C = computed(() => (props.isConvertPrice ? "USD" : "LKR"));
@@ -140,22 +155,14 @@ const handlePrintReceipt = () => {
     })
     .join("");
 
-  // Compose totals (labels only switch currency; numbers already computed upstream)
-  const maybeSub = Number(props.subTotal) !== Number(props.total) && Number(props.subTotal) !== 0
-    ? `<div><span>Sub Total</span><span>${fmt(props.subTotal)} ${C.value}</span></div>`
-    : "";
+  
 
-  const maybeDisc = Number(props.totalDiscount) !== 0
-    ? `<div><span>Discount</span><span>(${fmt(props.totalDiscount)}) ${C.value}</span></div>`
-    : "";
-
+  
   const maybeOwner = Number(props.owner_discount_value) !== 0
     ? `<div><span>Owner Discount ${props.owner_code ? `(${props.owner_code})` : ""}</span><span>(${fmt(props.owner_discount_value)}) ${C.value}</span></div>`
     : "";
 
-  const maybeCustDisc = Number(props.custom_discount) !== 0
-    ? `<div><span>Customer Discount</span><span>(${fmt(props.custom_discount)}) ${C.value}</span></div>`
-    : "";
+
 
   const maybeDelivery = props.delivery_charge
     ? `<div><span>Delivery Charge</span><span>${fmt(props.delivery_charge)} ${C.value}</span></div>`
@@ -180,6 +187,29 @@ const handlePrintReceipt = () => {
   const maybeBalance = Number(props.balance) !== 0
     ? `<div style="font-weight:bold;"><span>Balance</span><span>${fmt(props.balance)} ${C.value}</span></div>`
     : "";
+
+
+    const maybeCustDisc = totalDiscountValue > 0
+      ? `
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin:8px 0;
+          padding:10px 5px;
+          border:1px solid #000;    
+          font-size:12px;
+          border-radius:0px;
+          font-weight:700;
+        ">
+          <span style="font-size:12px;letter-spacing:.02em;">TOTAL DISCOUNT</span>
+          <span style="font-size:12px;">
+            ${fmt(totalDiscountValue)} ${C.value}
+          </span>
+        </div>
+      `
+      : '';
+
 
   const orderType =
     props.order_type === "takeaway"
@@ -252,7 +282,7 @@ const handlePrintReceipt = () => {
         <table>
           <thead>
             <tr>
-              <th>Description</th>
+              <th>Items</th>
               <th style="text-align:center;">Qty</th>
               <th style="text-align:right;">Price</th>
             </tr>
@@ -264,16 +294,14 @@ const handlePrintReceipt = () => {
       </div>
 
       <div class="totals">
-        ${maybeSub}
-        ${maybeDisc}
         ${maybeOwner}
-        ${maybeCustDisc}
-        ${maybeDelivery}
-        ${maybeService}
-        ${maybeBank}
-        ${maybeTotal}
-        ${maybeCash}
-        ${maybeBalance}
+  ${maybeDelivery}
+  ${maybeService}
+  ${maybeBank}
+  ${maybeTotal}
+  ${maybeCash}
+  ${maybeBalance}
+  ${maybeCustDisc}  
       </div>
 
       ${

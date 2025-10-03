@@ -57,8 +57,11 @@
           <h2 class="text-xl font-extrabold tracking-wide text-black uppercase">Amount</h2>
         </div>
         <p class="text-2xl font-bold text-black">
-          {{ salesGrossTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} LKR
-        </p>
+  {{
+    Math.max(0, (salesGrossTotal - salesOwnerDiscountTotal))
+      .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }} LKR
+</p>
       </div>
       <div class="py-6 flex flex-col justify-center items-center border-2 border-[#488D3F] w-full space-y-8 rounded-2xl bg-[#488D3F66] shadow-lg hover:-translate-y-1 transition">
         <h2 class="text-xl font-extrabold tracking-wide text-black uppercase">Net Profit</h2>
@@ -151,7 +154,11 @@
             <p class="text-sm font-extrabold text-black uppercase">
               Final Selling Price :
               <span class="text-base font-bold">
-                {{ salesGrossTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }} LKR
+               
+  {{
+    Math.max(0, (salesGrossTotal - salesOwnerDiscountTotal))
+      .toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+  }} LKR
               </span>
             </p>
           </div>
@@ -198,6 +205,8 @@
               <th class="p-3 num font-semibold">Final Selling Price (LKR)</th>
               <th class="p-3 num font-semibold">Service Charge</th>
               <th class="p-3 num font-semibold">Discounts</th>
+              <th class="p-3 num font-semibold">Owner </th>
+              <th class="p-3 num font-semibold">Owner Discount </th>
               <th class="p-3 num font-semibold">Cost (LKR)</th>
               <th class="p-3 num font-semibold">Profit (LKR)</th>
             </tr>
@@ -209,18 +218,30 @@
               <td class="p-3 text-center">{{ s.order_id ? s.order_id : 'Service -' }} {{ s.service_name }}</td>
               <td class="p-3">{{ s.customer?.name ?? 'N/A' }}</td>
               <td class="p-3 text-center">{{ saleQty(s) }}</td>
+              
 
               <td class="p-3 num text-center">
-                {{
-                  toMoney(
-                    (Number(s.total_amount || 0) + (Number(s.total_amount || 0) * Number(s.service_charge || 0) / 100)) -
-                    (s.custom_discount_type === 'percent' ? (Number(s.total_amount || 0) * Number(s.custom_discount || 0) / 100) : Number(s.custom_discount || 0))
-                  )
-                }}
+              <td class="p-3 num text-right">
+  {{
+    toMoney(
+      Math.max(
+        0,
+        (Number(s.total_amount || 0) + (Number(s.total_amount || 0) * Number(s.service_charge || 0) / 100))
+        - (s.custom_discount_type === 'percent'
+            ? (Number(s.total_amount || 0) * Number(s.custom_discount || 0) / 100)
+            : Number(s.custom_discount || 0))
+        - Number(s.owner_discount_value || 0) // <-- subtract owner discount
+      )
+    )
+  }}
+</td>
+
               </td>
 
               <td class="p-3 num text-center">{{ toMoney(s.service_charge) }}%</td>
               <td class="p-3 num text-center">{{ discountDisplay(s) }}</td>
+              <td class="p-3">{{ s.owner?.name ?? '—' }}</td>
+              <td class="p-3 num text-center">{{ toMoney(s.owner_discount_value || 0) }}</td>
               <td class="p-3 num text-center">{{ toMoney(s.total_cost || 0) }}</td>
               <td class="p-3 num text-center">
                 <ul>
@@ -236,9 +257,18 @@
             <tr>
               <td class="p-3 text-right" colspan="4">Totals:</td>
               <td class="p-3 text-center">{{ salesTotalQty.toLocaleString() }}</td>
-              <td class="p-3 num text-center">{{ salesGrossTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }}</td>
+           <td class="p-3 num text-center">
+  {{
+    Math.max(0, (salesGrossTotal - salesOwnerDiscountTotal))
+      .toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+  }}
+</td>
               <td class="p-3 num text-center"></td>
               <td class="p-3 num text-center"></td>
+              <td class="p-3 num text-center"></td>
+           <td class="p-3 num text-center">
+      {{ salesOwnerDiscountTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }}
+    </td>
               <td class="p-3 num text-center">{{ salesCostTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }}</td>
               <td class="p-3 num text-center">{{ salesProfitTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) }}</td>
             </tr>
@@ -341,6 +371,11 @@ import {
 } from "chart.js";
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
+
+
+const salesOwnerDiscountTotal = computed(() =>
+  (sales.value || []).reduce((sum, s) => sum + Number(s.owner_discount_value || 0), 0)
+);
 
 // Props expected from controller (updated names)
 const props = defineProps({
@@ -589,16 +624,26 @@ const downloadSalesTablePDF = () => {
   const doc = new jsPDF("l", "mm", "a4");
   const now = new Date();
 
-  const _toMoney = (n) => (Number(n || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const _toMoney = (n) =>
+    (Number(n || 0)).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   const _formatDate = (d) => (d ? new Date(d).toLocaleDateString() : "");
+  const _ownerName = (s) => (s.owner?.name ?? "—");
 
-  const _saleQty = (s) => (Array.isArray(s.sale_items) ? s.sale_items.reduce((total, item) => total + Number(item.quantity || 0), 0) : 0);
+  const _saleQty = (s) =>
+    Array.isArray(s.sale_items)
+      ? s.sale_items.reduce((total, item) => total + Number(item.quantity || 0), 0)
+      : 0;
+
   const _customDiscountLkr = (s) => {
     const gross = Number(s.total_amount || 0);
     const val = Number(s.custom_discount || 0);
     const type = s.custom_discount_type || "fixed";
     return type === "percent" ? (gross * val) / 100 : val;
   };
+
   const _discountDisplay = (s) => {
     const parts = [];
     const gross = Number(s.total_amount || 0);
@@ -615,11 +660,17 @@ const downloadSalesTablePDF = () => {
     return parts.join("  |  ");
   };
 
-  const _saleProfit = (s) => {
+  // (gross + service) - custom - owner (clamped >= 0)
+  const _saleNetWithSvcLessDiscounts = (s) => {
     const gross = Number(s.total_amount || 0);
     const svc = (gross * Number(s.service_charge || 0)) / 100;
-    const discount = _customDiscountLkr(s);
-    const net = gross + svc - discount;
+    const custom = _customDiscountLkr(s);
+    const owner = Number(s.owner_discount_value || 0);
+    return Math.max(0, gross + svc - custom - owner);
+  };
+
+  const _saleProfit = (s) => {
+    const net = _saleNetWithSvcLessDiscounts(s);
     const cost = Number(s.total_cost || 0);
     return net - cost;
   };
@@ -628,36 +679,35 @@ const downloadSalesTablePDF = () => {
     const date = _formatDate(s.sale_date);
     const orderNumber = s.order_id ? s.order_id : `Service - ${s.service_name || ""}`;
     const customer = s.customer?.name ?? "N/A";
+    const owner = _ownerName(s);
     const qty = _saleQty(s);
 
-    const gross = Number(s.total_amount || 0);
-    const svc = (gross * Number(s.service_charge || 0)) / 100;
-    const netWithSvc = gross + svc - _customDiscountLkr(s);
-
+    const netWithSvcLessAll = _saleNetWithSvcLessDiscounts(s);
     const discounts = _discountDisplay(s);
-    const cost = Number(s.total_cost || 0);
-    const profit = _saleProfit(s);
+    const ownerDisc = _toMoney(s.owner_discount_value || 0);
+    const cost = _toMoney(s.total_cost || 0);
+    const profit = _toMoney(_saleProfit(s));
 
     return [
-      i + 1,
-      date,
-      orderNumber,
-      customer,
-      qty.toString(),
-      _toMoney(netWithSvc),
-      `${_toMoney(s.service_charge)}%`,
-      discounts,
-      _toMoney(cost),
-      _toMoney(profit),
+      i + 1,                     // #
+      date,                      // Date
+      orderNumber,               // Order #
+      customer,                  // Customer
+      owner,                     // Owner (NEW)
+      qty.toString(),            // Qty
+      _toMoney(netWithSvcLessAll),           // Final Selling Price (LKR)
+      `${_toMoney(s.service_charge)}%`,      // Service Charge
+      discounts,                             // Discounts (custom only text)
+      ownerDisc,                             // Owner Discount (NEW)
+      cost,                                  // Cost
+      profit,                                // Profit
     ];
   });
 
+  // Totals
   const totalQty = (sales.value || []).reduce((a, s) => a + _saleQty(s), 0);
-  const totalGrossNet = (sales.value || []).reduce((a, s) => {
-    const gross = Number(s.total_amount || 0);
-    const svc = (gross * Number(s.service_charge || 0)) / 100;
-    return a + (gross + svc - _customDiscountLkr(s));
-  }, 0);
+  const totalGrossNet = (sales.value || []).reduce((a, s) => a + _saleNetWithSvcLessDiscounts(s), 0);
+  const totalOwnerDisc = (sales.value || []).reduce((a, s) => a + Number(s.owner_discount_value || 0), 0);
   const totalCost = (sales.value || []).reduce((a, s) => a + Number(s.total_cost || 0), 0);
   const totalProfit = (sales.value || []).reduce((a, s) => a + _saleProfit(s), 0);
 
@@ -671,19 +721,23 @@ const downloadSalesTablePDF = () => {
     "Date",
     "Order Number",
     "Customer",
+    "Owner",                    // NEW
     "Qty",
     "Final Selling Price (LKR)",
     "Service Charge",
     "Discounts",
+    "Owner Discount",           // NEW
     "Cost (LKR)",
     "Profit (LKR)",
   ]];
 
   const foot = [[
-    { content: "Totals:", colSpan: 4, styles: { halign: "right", fontStyle: "bold" } },
+    { content: "Totals:", colSpan: 5, styles: { halign: "right", fontStyle: "bold" } }, // bumped because Owner column added
     { content: totalQty.toLocaleString(), styles: { halign: "center", fontStyle: "bold" } },
     _toMoney(totalGrossNet),
     "",
+    "",
+    _toMoney(totalOwnerDisc),
     _toMoney(totalCost),
     _toMoney(totalProfit),
   ]];
@@ -697,23 +751,25 @@ const downloadSalesTablePDF = () => {
     styles: { fontSize: 9, cellPadding: 2 },
     headStyles: { fillColor: [51, 65, 85], textColor: 255 },
     columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 22 },
-      2: { cellWidth: 36 },
-      3: { cellWidth: 36 },
-      4: { cellWidth: 14, halign: "center" },
-      5: { cellWidth: 28, halign: "right" },
-      6: { cellWidth: 24, halign: "right" },
-      7: { cellWidth: 28, halign: "right" },
-      8: { cellWidth: 28, halign: "right" },
-      9: { cellWidth: 28, halign: "right" },
+      0:  { cellWidth: 10 },             // #
+      1:  { cellWidth: 22 },             // Date
+      2:  { cellWidth: 36 },             // Order #
+      3:  { cellWidth: 36 },             // Customer
+      4:  { cellWidth: 28 },             // Owner
+      5:  { cellWidth: 14, halign: "center" }, // Qty
+      6:  { cellWidth: 28, halign: "right" },  // Final
+      7:  { cellWidth: 24, halign: "right" },  // Service
+      8:  { cellWidth: 28, halign: "right" },  // Discounts
+      9:  { cellWidth: 28, halign: "right" },  // Owner Discount
+      10: { cellWidth: 28, halign: "right" },  // Cost
+      11: { cellWidth: 28, halign: "right" },  // Profit
     },
     margin: { top: 18, left: 8, right: 8 },
     didParseCell: (data) => {
       if (data.section === "foot") {
-        if (data.column.index === 4) data.cell.styles.halign = "center"; // Qty
-        if (data.column.index >= 5) data.cell.styles.halign = "right"; // Money columns
-        if (data.column.index <= 3) data.cell.styles.halign = "right"; // "Totals:"
+        if (data.column.index === 5) data.cell.styles.halign = "center"; // Qty
+        if (data.column.index >= 6) data.cell.styles.halign = "right";   // money cols
+        if (data.column.index <= 4) data.cell.styles.halign = "right";   // "Totals:"
       }
     },
   });
@@ -721,6 +777,7 @@ const downloadSalesTablePDF = () => {
   const safe = (s) => String(s).replace(/[^\dA-Za-z-]/g, "_");
   doc.save(`Sales_Report_${safe(dateRangeLabel.value)}.pdf`);
 };
+
 
 // ===== Stock table PDF =====
 const downloadStockTablePDF = () => {
@@ -782,6 +839,7 @@ const downloadStockTablePDF = () => {
     },
     margin: { top: 18, left: 8, right: 8 },
   });
+  
 
   const totalsRow = [
     "",

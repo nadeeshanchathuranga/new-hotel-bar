@@ -55,8 +55,9 @@ class ReportController extends Controller
     }
 
     // -------- Sales (filter by created_at) --------
-    $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer']);
+ $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner']);
 
+ 
     if ($from || $to) {
         $applyCreatedWindow($salesQuery);
     }
