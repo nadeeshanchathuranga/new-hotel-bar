@@ -82,7 +82,7 @@
     </div>
 
     <!-- Inventory totals -->
-    <div class="grid w-full md:grid-cols-3 grid-cols-2 gap-8">
+    <!-- <div class="grid w-full md:grid-cols-3 grid-cols-2 gap-8">
       <div class="py-6 flex flex-col justify-center items-center border-2 border-[#ffb224] w-full space-y-4 rounded-2xl bg-[#ffb224] shadow-lg">
         <h2 class="text-xl font-extrabold tracking-wide text-black uppercase">Total Quantity In Stock:</h2>
         <p class="text-2xl font-bold text-black">{{ totalQty }} QTY</p>
@@ -95,7 +95,7 @@
         <h2 class="text-xl font-extrabold tracking-wide text-black uppercase">Total Cost Price In Stock:</h2>
         <p class="text-2xl font-bold text-black">{{ totalRetailValue.toFixed(2) }} LKR</p>
       </div>
-    </div>
+    </div> -->
 
     <!-- Charts -->
     <div class="flex md:flex-row flex-col items-center justify-center w-full h-full md:space-x-4 md:space-y-0 space-y-4">
@@ -348,45 +348,7 @@
 
 
 
-    <div class="overflow-x-auto max-h-[420px] border rounded-xl mt-2">
-  <table id="ownersTbl" class="w-full text-gray-800 bg-white border border-gray-300 rounded-lg shadow-md table-auto">
-    <thead>
-      <tr class="bg-gradient-to-r from-green-700 via-green-600 to-green-700 text-white text-[14px] border-b border-green-800">
-        <th class="p-3 text-left font-semibold">#</th>
-        <th class="p-3 text-left font-semibold">Owner Name</th>
-        <th class="p-3 text-left font-semibold">Code</th>
-        <th class="p-3 text-center font-semibold">Owner Status</th>
-        <th class="p-3 text-center font-semibold">Month</th>
-        <th class="p-3 text-center font-semibold">Current Discount</th>
-        <th class="p-3 text-center font-semibold">Item Status</th>
-      </tr>
-    </thead>
-    <tbody class="text-[12px] font-medium">
-      <tr v-for="(o, i) in ownersList" :key="o.id ?? i" class="border-b transition duration-200 hover:bg-gray-100">
-        <td class="p-3 text-center">{{ i + 1 }}</td>
-        <td class="p-3 font-bold">{{ o.name || 'N/A' }}</td>
-        <td class="p-3">{{ o.code || '-' }}</td>
-        <td class="p-3 text-center">
-          <span v-if="o.status === 'active'" class="text-green-600 font-semibold">Active</span>
-          <span v-else class="text-red-600 font-semibold">Inactive</span>
-        </td>
-        <td class="p-3 text-center">
-          <!-- Show last owner item month -->
-          {{ o.items.length ? o.items[o.items.length - 1].month : '-' }}
-        </td>
-        <td class="p-3 text-center">
-          {{ o.items.length ? o.items[o.items.length - 1].current_discount : '-' }}
-        </td>
-        <td class="p-3 text-center">
-          <span v-if="o.items.length && o.items[o.items.length - 1].status === 'active'" class="text-green-600 font-semibold">Active</span>
-          <span v-else-if="o.items.length" class="text-red-600 font-semibold">Inactive</span>
-          <span v-else>-</span>
-        </td>
-      </tr>
-    </tbody>
-  
-  </table>
-</div>
+    0-=
 
   </div>
   <Footer />
