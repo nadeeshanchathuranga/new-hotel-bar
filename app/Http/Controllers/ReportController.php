@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Report;
+use App\Models\Owner;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Http\Request;
@@ -57,7 +58,7 @@ class ReportController extends Controller
     // -------- Sales (filter by created_at) --------
  $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner']);
 
- 
+
     if ($from || $to) {
         $applyCreatedWindow($salesQuery);
     }
@@ -81,6 +82,10 @@ class ReportController extends Controller
     });
 
     $sales = $salesQuery->orderBy('created_at', 'desc')->get();
+    $ownersList = Owner::with('items')->get();
+
+  
+
 
     // Helpers
     $customDiscountToLkr = function ($sale) {
@@ -150,6 +155,7 @@ class ReportController extends Controller
 
         'startDate'                 => $startDateRaw,
         'endDate'                   => $endDateRaw,
+        'ownersList'                   => $ownersList,
 
         'categorySales'             => $categorySales,
         'employeeSalesSummary'      => $employeeSalesSummary,
