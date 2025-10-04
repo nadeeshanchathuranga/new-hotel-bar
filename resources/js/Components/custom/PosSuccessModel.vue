@@ -154,11 +154,8 @@ const handlePrintReceipt = () => {
       `;
     })
     .join("");
-
-
     const totalDiscountValue =
-    Number(props.totalDiscount || 0) + Number(props.custom_discount || 0);
-  
+    Number(props.totalDiscount || 0) + Number(props.custom_discount || 0);  
 const maybeSubTotal = Number(props.subTotal || 0)
   ? `<div><span>Sub Total</span><span>${fmt(props.subTotal)} ${C.value}</span></div>`
   : "";
