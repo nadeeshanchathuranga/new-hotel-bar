@@ -226,9 +226,7 @@ class ProductController extends Controller
     {
 
        
-        if (!Gate::allows('hasRole', ['Admin'])) {
-            abort(403, 'Unauthorized');
-        }
+        
 
         $validated = $request->validate([
             'category_id' => 'nullable|exists:categories,id',
@@ -300,9 +298,7 @@ class ProductController extends Controller
     public function productVariantStore(Request $request)
     {
 
-        if (!Gate::allows('hasRole', ['Admin'])) {
-            abort(403, 'Unauthorized');
-        }
+        
 
         $validated = $request->validate([
             'category_id' => 'nullable|exists:categories,id',
@@ -370,9 +366,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        if (!Gate::allows('hasRole', ['Admin'])) {
-            abort(403, 'Unauthorized');
-        }
+        
         // $categories = Category::all();
         // $sizes = Size::all();
         // $suppliers = Supplier::all();
@@ -421,10 +415,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        if (!Gate::allows('hasRole', ['Admin'])) {
-            abort(403, 'Unauthorized');
-        }
-
+        
         $validated = $request->validate([
             'category_id' => 'nullable|exists:categories,id',
             'name' => 'string|max:255',
@@ -488,10 +479,7 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        if (!Gate::allows('hasRole', ['Admin'])) {
-            abort(403, 'Unauthorized');
-        }
-
+        
         // Prepare to delete the image
         $imagePath = str_replace('storage/', '', $product->image);
         $imageUsageCount = Product::where('image', $product->image)
@@ -542,9 +530,7 @@ class ProductController extends Controller
 
     public function submitPromotion(Request $request)
     {
-        if (!Gate::allows('hasRole', ['Admin'])) {
-            abort(403, 'Unauthorized');
-        }
+        
 
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',

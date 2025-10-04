@@ -49,7 +49,7 @@
         </div>
       </Link>
 
-      <Link href="/products" v-if="HasRole(['Admin', 'Manager'])">
+      <Link href="/products" v-if="HasRole(['Admin', 'Owner'])">
         <div class="dashboard-card bg-[#C62E2E]">
           <div class="card-content">
             <div class="icon-container">

@@ -393,13 +393,14 @@
     >
       <option value="">Select Service Charge</option>
       <option
-        v-for="charge in serviceCharge"
-        :key="charge.id"
-        :value="parseFloat(charge.service_charge)"
-      >
-        {{ charge.service_charge }}%
-        {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
-      </option>
+  v-for="charge in serviceCharge"
+  :key="charge.id"
+  :value="parseFloat(charge.service_charge)"
+>
+  {{ charge.service_charge }}%
+  {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
+</option>
+
     </select>
   </div>
 
@@ -1135,8 +1136,48 @@ const decrementQuantity = (id) => {
   if (p) { if (p.quantity > 1) p.quantity -= 1; }
 };
 
+
+
+
+// Default service charge (the one with service_check === true)
+const defaultServiceCharge = computed(() => {
+  const def = (props.serviceCharge || []).find(
+    c => c.service_check === true || c.service_check === 'true'
+  );
+  return def ? parseFloat(def.service_charge) : '';
+});
+
+
+
+
+
+
+const ensureDefaultServiceCharge = (table) => {
+  if (!table) return;
+  const isDineIn = table.id !== 'default' && table.order_type !== 'pickup'; // pickup = delivery
+  if (
+    isDineIn &&
+    (table.service_charge === '' || table.service_charge === null || table.service_charge === undefined)
+  ) {
+    table.service_charge = defaultServiceCharge.value;
+  }
+};
+// when selectedTable / order_type / default changes, ensure service charge
+watch(
+  () => [selectedTable.value?.id, selectedTable.value?.order_type, defaultServiceCharge.value],
+  () => ensureDefaultServiceCharge(selectedTable.value),
+  { immediate: true }
+);
+
+// if serviceCharge prop updates (eg. from server), re-ensure
+watch(
+  () => props.serviceCharge,
+  () => ensureDefaultServiceCharge(selectedTable.value),
+  { deep: true }
+);
+
 const addTable = () => {};
-const selectTable = (table) => { selectedTable.value = table; };
+const selectTable = (table) => { selectedTable.value = table; ensureDefaultServiceCharge(selectedTable.value);};
 const removeTable = (index) => {
   const removed = tables.value[index];
   localStorage.setItem(`removedTable_${removed.number}`, JSON.stringify(removed));
