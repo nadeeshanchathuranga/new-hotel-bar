@@ -155,8 +155,13 @@ const handlePrintReceipt = () => {
     })
     .join("");
 
-  
 
+    const totalDiscountValue =
+    Number(props.totalDiscount || 0) + Number(props.custom_discount || 0);
+  
+const maybeSubTotal = Number(props.subTotal || 0)
+  ? `<div><span>Sub Total</span><span>${fmt(props.subTotal)} ${C.value}</span></div>`
+  : "";
   
   const maybeOwner = Number(props.owner_discount_value) !== 0
     ? `<div><span>Owner Discount ${props.owner_code ? `(${props.owner_code})` : ""}</span><span>(${fmt(props.owner_discount_value)}) ${C.value}</span></div>`
@@ -294,6 +299,7 @@ const handlePrintReceipt = () => {
       </div>
 
       <div class="totals">
+      ${maybeSubTotal}
         ${maybeOwner}
   ${maybeDelivery}
   ${maybeService}

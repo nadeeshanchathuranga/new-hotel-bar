@@ -1321,19 +1321,7 @@ watch(
   { deep: true }
 );
 
-/* live clamp while typing (optional but helpful) */
-watch(
-  () => selectedTable.value?.custom_discount,
-  (val) => {
-    if (!selectedTable.value) return;
-    let v = Number(val);
-    if (isNaN(v)) v = 0;
-    if (v < 0) v = 0;
-    if (v > 100) v = 100;
-    selectedTable.value.custom_discount = v;
-  }
-);
-
+ 
 /* =========================
    COUPON & BARCODE
 ========================= */
