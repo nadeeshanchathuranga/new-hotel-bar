@@ -261,7 +261,7 @@
         </div>
       </Link>
 
-      <Link href="/transactionHistory" v-if="HasRole(['Admin'])">
+      <Link href="/transactionHistory" v-if="HasRole(['Admin','Owner'])">
         <div class="dashboard-card bg-[#FFBF00]">
           <div class="card-content">
             <div class="icon-container">
