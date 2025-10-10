@@ -27,8 +27,8 @@ Route::get('/delete_products/{product}', [ProductApiController::class, 'destroyP
 
 
 Route::post('/create_category', [CategoryApiController::class, 'storeCategory']); 
-Route::post('/update_categories/{category}', [CategoryApiController::class, 'updateCategory']);  
-Route::get('/delete_categories/{category}', [CategoryApiController::class, 'destroyCategory']);
+Route::post('/update_category/{category}', [CategoryApiController::class, 'updateCategory']);  
+Route::get('/delete_category/{category}', [CategoryApiController::class, 'destroyCategory']);
  
 
 
