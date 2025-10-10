@@ -53,6 +53,9 @@
   <div class="flex items-start justify-between">
     <div>
       <h2 class="text-3xl font-bold text-gray-900 leading-tight">
+        {{ selectedProduct.id }}
+      </h2>
+      <h2 class="text-3xl font-bold text-gray-900 leading-tight">
         {{ selectedProduct.name }}
       </h2>
       <p class="mt-1 text-lg italic text-gray-500">
