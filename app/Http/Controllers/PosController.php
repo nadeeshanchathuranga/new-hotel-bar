@@ -17,7 +17,9 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Gate; 
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -153,7 +155,7 @@ class PosController extends Controller
     }
 
 
-public function submit(Request $request)
+ public function submit(Request $request)
 {
     if (!Gate::allows('hasRole', ['Admin', 'Cashier'])) {
         abort(403, 'Unauthorized');
@@ -235,7 +237,7 @@ public function submit(Request $request)
             : $customInput;
     }
 
-    // ---- Owner discount (for this bill)
+    // ---- Owner discount
     $ownerId   = $data['owner_id'] ?? null;
     $ownerDisc = (float) ($data['owner_discount_value'] ?? 0);
 
@@ -318,12 +320,10 @@ public function submit(Request $request)
             'sale_date'            => now()->toDateString(),
             'cash'                 => $request->input('cash'),
 
-            // Custom discount fields
             'custom_discount'      => $customInput,
             'custom_discount_type' => $customType,
             'custom_discount_calc' => $customDiscountAmount,
 
-            // Owner discount (applied to bill)
             'owner_id'             => $ownerId ?: null,
             'owner_discount_value' => $ownerDisc ?: 0,
 
@@ -372,9 +372,9 @@ public function submit(Request $request)
             $productModel->update(['stock_quantity' => $newStock]);
         }
 
-        // ---- Owner usage increment (✅ use owner_discount_value; month is DATE)
+        // ---- Owner usage increment
         if ($ownerId && $ownerDisc > 0) {
-            $monthDate = now()->startOfMonth()->toDateString(); // "YYYY-MM-01"
+            $monthDate = now()->startOfMonth()->toDateString();
 
             $ownerItem = OwnerItem::where('owner_id', $ownerId)
                 ->where('month', $monthDate)
@@ -395,6 +395,40 @@ public function submit(Request $request)
         }
 
         DB::commit();
+
+        // ---- Send data to external API (POS sync)
+        try {
+            $salesItems = collect($products)->map(function ($p) {
+                $product = Product::find($p['id']);
+                return [
+                    'pos_id' => $product->id ?? null,
+                    'qty'    => $p['quantity'],
+                ];
+            })->filter(fn($item) => !empty($item['pos_id']))->values();
+
+          
+
+
+       
+            if ($salesItems->isNotEmpty()) {
+                $response = Http::withHeaders([
+                    'Accept' => 'application/json',
+                ])->post('https://tuk-stock.jaan.lk/api/sync/pos_billing.php', [
+                    'sales_items' => $salesItems,
+                ]);
+
+                if (!$response->successful()) {
+                    Log::warning('POS sync failed', [
+                        'response' => $response->body(),
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error syncing POS billing', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json(['message' => 'Sale recorded successfully!'], 201);
 
     } catch (\Throwable $e) {
@@ -405,10 +439,6 @@ public function submit(Request $request)
         ], 500);
     }
 }
-
-
-
-
 
 
 
