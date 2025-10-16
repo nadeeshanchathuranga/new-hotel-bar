@@ -83,6 +83,7 @@ Route::middleware([
     Route::post('/pos/submit', [PosController::class, 'submit'])->name('pos.checkout');
     Route::resource('payment', PaymentController::class);
     Route::resource('reports', ReportController::class);
+    Route::get('/kot_reports', [ReportController::class, 'kotIndex'])->name('reports.kot_index');
     Route::resource('customers', CustomerController::class);
     Route::resource('colors', ColorController::class);
     Route::resource('coupons', CouponController::class);

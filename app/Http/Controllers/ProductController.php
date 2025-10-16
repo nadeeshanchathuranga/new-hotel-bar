@@ -444,9 +444,7 @@ public function productVariantStore(Request $request)
      * Update the specified resource in storage.
      */
 
- 
-
-public function update(Request $request, Product $product)
+ public function update(Request $request, Product $product)
 {
     // Step 1: Validate request
     $validated = $request->validate([
@@ -463,28 +461,37 @@ public function update(Request $request, Product $product)
         'supplier_id' => 'nullable|exists:suppliers,id',
         'barcode' => 'nullable|string|unique:products,barcode,' . $product->id,
         'unit_id' => 'nullable|exists:units,id',
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         'description' => 'nullable|string',
         'is_beverage' => 'boolean',
     ]);
 
     try {
-        // Step 2: Handle image upload
-        if ($request->hasFile('image')) {
+        // Step 2: Handle image upload if present
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $request->validate([
+                'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            ]);
+
             // Delete old image if exists
             if ($product->image) {
-                Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
+                $oldImagePath = str_replace('storage/', '', $product->image);
+                Storage::disk('public')->delete($oldImagePath);
             }
+
             $fileName = 'product_' . date("YmdHis") . '.' . $request->file('image')->getClientOriginalExtension();
             $path = $request->file('image')->storeAs('products', $fileName, 'public');
             $validated['image'] = 'storage/' . $path;
+        } else {
+            // Keep old image if no new upload
+            $validated['image'] = $product->image;
         }
 
         // Step 3: Update product locally
+        $oldQuantity = $product->stock_quantity;
         $product->update($validated);
 
-        // Step 4: Update stock transaction if quantity changed
-        if (isset($validated['stock_quantity']) && $validated['stock_quantity'] != $product->stock_quantity) {
+        // Step 4: Record stock transaction if quantity changed
+        if ($validated['stock_quantity'] != $oldQuantity) {
             StockTransaction::create([
                 'product_id' => $product->id,
                 'transaction_type' => 'Updated',
@@ -498,9 +505,9 @@ public function update(Request $request, Product $product)
         $apiData = [
             'name' => $product->name,
             'pos_id' => $product->id,
-            'unit_id' => $validated['unit_id'] ?? null,
-            'opening_qty' => $validated['stock_quantity'] ?? 0,
-            'current_qty' => $validated['stock_quantity'] ?? 0,
+            'unit_id' => $product->unit_id,
+            'opening_qty' => $product->stock_quantity,
+            'current_qty' => $product->stock_quantity,
             'selling_price' => $product->selling_price,
         ];
 
@@ -522,6 +529,7 @@ public function update(Request $request, Product $product)
         return redirect()->back()->with('error', 'An error occurred while updating the product.');
     }
 }
+
 
 
  
