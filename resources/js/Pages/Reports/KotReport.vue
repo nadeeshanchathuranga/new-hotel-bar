@@ -49,6 +49,7 @@
             <tr>
               <th class="p-3 text-center">#</th>
               <th class="p-3 text-center">Date</th>
+              <th class="p-3 text-center">Order Number</th>
               <th class="p-3 text-left">Product Name</th>
               <th class="p-3 text-left">Category</th>
               <th class="p-3 text-center">Qty</th>
@@ -62,6 +63,7 @@
                   class="border-b hover:bg-gray-100 transition">
                 <td class="p-3 text-center">{{ getRowNumber(saleIdx, itemIdx) }}</td>
                 <td class="p-3 text-center">{{ formatDate(s.sale_date) }}</td>
+                <td class="p-3 text-center">{{ s.order_id }}</td>
                 <td class="p-3">{{ item.product?.name || 'N/A' }}</td>
                 <td class="p-3">{{ item.product?.category?.name || 'N/A' }}</td>
                 <td class="p-3 text-center">{{ Number(item.quantity || 0) }}</td>
@@ -116,7 +118,7 @@ const filterData = () => {
   );
 };
 
- const downloadSalesTableExcel = () => {
+const downloadSalesTableExcel = () => {
   // 1) Filter data by the selected range (unchanged)
   const filteredSales = sales.value.filter((sale) => {
     if (!startDate.value && !endDate.value) return true;
@@ -130,8 +132,8 @@ const filterData = () => {
     return true;
   });
 
-  // 2) Build data rows
-  const header = ["#", "Date", "Product Name", "Category", "Qty"];
+  // 2) Build data rows (include Order Number)
+  const header = ["#", "Date", "Order Number", "Product Name", "Category", "Qty"];
   const rows = [];
   let rowNum = 1;
 
@@ -139,11 +141,11 @@ const filterData = () => {
     (s.sale_items || []).forEach((item) => {
       rows.push([
         rowNum++,
-        // Write a real Date object so Excel treats it as a date
-        new Date(s.sale_date),
-        item.product?.name || "N/A",
-        item.product?.category?.name || "N/A",
-        Number(item.quantity || 0),
+        new Date(s.sale_date),                          // Date (col B, index 1)
+        s.order_id ?? s.orderNo ?? "N/A",               // Order Number (col C)
+        item.product?.name || "N/A",                    // Product Name (col D)
+        item.product?.category?.name || "N/A",          // Category (col E)
+        Number(item.quantity ?? 0),                     // Qty (col F)
       ]);
     });
   });
@@ -154,37 +156,37 @@ const filterData = () => {
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
   // 4) Ensure Date column (B) is typed/formatted as a date
-  //    (Rows start at r=1 because r=0 is the header)
   for (let r = 1; r < aoa.length; r++) {
     const cellRef = XLSX.utils.encode_cell({ r, c: 1 }); // column B (0-indexed)
     const cell = ws[cellRef];
     if (cell && cell.v instanceof Date && !isNaN(cell.v)) {
-      cell.t = "d";                 // date type
-      cell.z = "yyyy-mm-dd";        // display format in Excel
+      cell.t = "d";
+      cell.z = "yyyy-mm-dd";
     }
   }
 
-  // 5) Add column widths (optional, for readability)
+  // 5) Column widths (now 6 columns)
   ws["!cols"] = [
     { wch: 6 },   // #
     { wch: 12 },  // Date
+    { wch: 18 },  // Order Number
     { wch: 32 },  // Product Name
     { wch: 22 },  // Category
     { wch: 8 },   // Qty
   ];
 
-  // 6) Apply AutoFilter to the full used range (header + all rows)
+  // 6) AutoFilter over the used range
   if (ws["!ref"]) {
     const range = XLSX.utils.decode_range(ws["!ref"]);
     ws["!autofilter"] = {
       ref: XLSX.utils.encode_range({
-        s: { r: 0, c: 0 },                  // A1 (header start)
-        e: { r: range.e.r, c: range.e.c },  // bottom-right cell
+        s: { r: 0, c: 0 },
+        e: { r: range.e.r, c: range.e.c },
       }),
     };
   }
 
-  // (Optional) If your SheetJS version supports it, this freezes the header row:
+  // Optional: freeze header
   // ws["!freeze"] = { rows: 1, cols: 0 };
 
   XLSX.utils.book_append_sheet(wb, ws, "KOT Sales");
@@ -193,6 +195,7 @@ const filterData = () => {
     `KOT_Sales_${startDate.value || "All"}_to_${endDate.value || "All"}.xlsx`
   );
 };
+
 
 </script>
 
