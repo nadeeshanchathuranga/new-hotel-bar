@@ -83,11 +83,6 @@
 
       <div class="flex justify-between items-center pb-4">
         <div class="flex gap-4">
-          <!-- <button @click="downloadSalesTablePDF"
-                  class="px-4 py-2 text-md font-semibold text-white bg-orange-600 rounded-lg hover:bg-orange-700 shadow-md">
-            Download PDF
-          </button> -->
-
           <button @click="downloadSalesTableExcel"
             class="px-4 py-2 text-md font-semibold text-white bg-orange-600 rounded-lg hover:bg-orange-700 shadow-md">
             Download Excel
@@ -158,6 +153,7 @@
               <th class="p-3 num font-semibold">Owner</th>
               <th class="p-3 num font-semibold">Owner Discount</th>
               <th class="p-3 num font-semibold">Profit</th>
+              <th class="p-3 num font-semibold">Wrong</th>
             </tr>
           </thead>
 
@@ -177,6 +173,19 @@
               <td class="p-3 num text-center">
                 {{ (Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0)).toFixed(2) }}
               </td>
+
+              <td class="p-3 text-center">
+                <span
+                  :class="[
+                    s.wrong_bill
+                      ? 'bg-red-100 text-red-700 ring-red-300'
+                      : 'bg-green-100 text-green-700 ring-green-300',
+                    'px-3 py-1 rounded-full text-[13px] font-semibold ring-1 inline-block min-w-[80px]'
+                  ]"
+                >
+                  {{ s.wrong_bill ? 'Wrong' : 'OK' }}
+                </span>
+              </td>
             </tr>
           </tbody>
 
@@ -191,6 +200,102 @@
               <td class="p-3 num text-center">—</td>
               <td class="p-3 num text-center">{{ salesOwnerDiscountTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
               <td class="p-3 num text-center">{{ salesProfitTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Wrong Bill Report -->
+    <div class="w-full bg-white border-4 border-red-700 rounded-xl p-6">
+      <div class="flex items-center justify-between pb-2">
+        <h2 class="text-2xl font-semibold text-red-700">Wrong Bill Report</h2>
+        <div class="flex gap-3">
+          <button @click="downloadWrongBillsExcel"
+                  class="px-4 py-2 text-md font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md">
+            Download Excel
+          </button>
+           
+        </div>
+      </div>
+
+      <!-- mini KPIs -->
+      <div class="grid md:grid-cols-3 grid-cols-2 gap-4 pb-4">
+        <div class="py-4 flex flex-col justify-center items-center border-2 border-red-600 w-full space-y-2 rounded-2xl bg-red-50 shadow">
+          <h3 class="text-sm font-bold text-red-700 uppercase">Wrong Bill Count</h3>
+          <p class="text-xl font-extrabold text-red-800">{{ wrongCount.toLocaleString() }}</p>
+        </div>
+        <div class="py-4 flex flex-col justify-center items-center border-2 border-red-600 w-full space-y-2 rounded-2xl bg-red-50 shadow">
+          <h3 class="text-sm font-bold text-red-700 uppercase">Wrong Bill Amount</h3>
+          <p class="text-xl font-extrabold text-red-800">
+            {{ wrongAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} LKR
+          </p>
+        </div>
+        <div class="py-4 flex flex-col justify-center items-center border-2 border-red-600 w-full space-y-2 rounded-2xl bg-red-50 shadow">
+          <h3 class="text-sm font-bold text-red-700 uppercase">Wrong Bill Profit (gross-cost)</h3>
+          <p class="text-xl font-extrabold text-red-800">
+            {{ wrongProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} LKR
+          </p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto overflow-y-auto max-h-[420px] border rounded-xl">
+        <table class="w-full text-gray-800 bg-white border border-gray-300 rounded-lg shadow-md">
+          <thead class="sticky top-0 z-10">
+            <tr class="bg-gradient-to-r from-red-700 via-red-600 to-red-700 text-white text-[14px] border-b border-red-800">
+              <th class="p-3 text-left font-semibold">#</th>
+              <th class="p-3 text-left font-semibold">Date</th>
+              <th class="p-3 text-left font-semibold">Order Number</th>
+              <th class="p-3 text-left font-semibold">Customer</th>
+              <th class="p-3 text-center font-semibold">Qty</th>
+              <th class="p-3 num font-semibold">Total Price</th>
+              <th class="p-3 num font-semibold">Service Charge (%)</th>
+              <th class="p-3 num font-semibold">Price with Service</th>
+              <th class="p-3 num font-semibold">Customer Discounts</th>
+              <th class="p-3 num font-semibold">Owner</th>
+              <th class="p-3 num font-semibold">Owner Discount</th>
+              <th class="p-3 num font-semibold">Profit</th>
+              <th class="p-3 num font-semibold">Wrong</th>
+            </tr>
+          </thead>
+          <tbody class="text-[12px] font-medium">
+            <tr v-for="(s, i) in wrongSales" :key="s.id ?? i" class="border-b transition duration-200 hover:bg-red-50">
+              <td class="p-3 text-center">{{ i + 1 }}</td>
+              <td class="p-3 whitespace-nowrap text-center">{{ formatDate(s.sale_date) }}</td>
+              <td class="p-3 text-center">{{ s.order_id ? s.order_id : 'Service -' }} {{ s.service_name }}</td>
+              <td class="p-3">{{ s.customer?.name ?? 'N/A' }}</td>
+              <td class="p-3 text-center">{{ saleQty(s) }}</td>
+              <td class="p-3 num text-center">{{ toMoney(Number(s.total_amount || 0)) }}</td>
+              <td class="p-3 num text-center">{{ Number(s.service_charge || 0).toFixed(2) }}%</td>
+              <td class="p-3 num text-right">{{ toMoney(priceWithService(s)) }}</td>
+              <td class="p-3 num text-center">{{ toMoney(customerDiscountAmount(s)) }}</td>
+              <td class="p-3 text-right">{{ (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? '—') : '—' }}</td>
+              <td class="p-3 num text-center">{{ (s.owner_discount_value && s.owner_discount_value != 0) ? toMoney(s.owner_discount_value) : '—' }}</td>
+              <td class="p-3 num text-center">
+                {{ (Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0)).toFixed(2) }}
+              </td>
+              <td class="p-3 text-center">
+                <span class="px-3 py-1 rounded-full text-[13px] font-semibold ring-1 inline-block min-w-[80px] bg-red-100 text-red-700 ring-red-300">
+                  Wrong
+                </span>
+              </td>
+            </tr>
+            <tr v-if="!wrongSales || wrongSales.length === 0">
+              <td colspan="13" class="p-6 text-center text-red-600 font-semibold">No Wrong Bills in this range.</td>
+            </tr>
+          </tbody>
+          <tfoot class="bg-red-50 text-[12px] font-semibold">
+            <tr>
+              <td class="p-3 text-right" colspan="4">Totals:</td>
+              <td class="p-3 text-center">{{ wrongQty.toLocaleString() }}</td>
+              <td class="p-3 num text-center">{{ wrongAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+              <td class="p-3 num text-center">—</td>
+              <td class="p-3 num text-center">{{ wrongWithService.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+              <td class="p-3 num text-center">{{ wrongCustomerDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+              <td class="p-3 num text-center">—</td>
+              <td class="p-3 num text-center">{{ wrongOwnerDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+              <td class="p-3 num text-center">{{ wrongProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+              <td class="p-3 num text-center">—</td>
             </tr>
           </tfoot>
         </table>
@@ -327,10 +432,11 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
 
-// Props
+// Props (ADDED wrongSales)
 const props = defineProps({
   products: { type: Array, required: true },
   sales: { type: Array, required: true },
+  wrongSales: { type: Array, default: () => [] }, // 🔴 new
   ownersList: { type: Array, required: true },
   totalSaleAmount: { type: Number, required: true },
   averageTransactionValue: { type: Number, required: true },
@@ -351,6 +457,7 @@ const startDate = ref(props.startDate);
 const endDate = ref(props.endDate);
 const products = ref(props.products);
 const sales = ref(props.sales);
+const wrongSales = ref(props.wrongSales); // 🔴 state
 
 // ---------- Shared helpers ----------
 const safe = (s) => String(s).replace(/[^\dA-Za-z-]/g, "_");
@@ -387,33 +494,47 @@ const saleProfit = (s) => {
 // Sales totals
 const salesTotalQty = computed(() => (sales.value || []).reduce((a, s) => a + saleQty(s), 0));
 
-const salesGrossTotal = computed(() => 
+const salesGrossTotal = computed(() =>
   (sales.value || []).reduce((a, s) => a + Number(s.total_amount || 0), 0)
 );
 
-const salesWithServiceTotal = computed(() => 
+const salesWithServiceTotal = computed(() =>
   (sales.value || []).reduce((a, s) => a + priceWithService(s), 0)
 );
 
-const salesCustomerDiscountTotal = computed(() => 
+const salesCustomerDiscountTotal = computed(() =>
   (sales.value || []).reduce((a, s) => a + customerDiscountAmount(s), 0)
 );
 
-const salesOwnerDiscountTotal = computed(() => 
+const salesOwnerDiscountTotal = computed(() =>
   (sales.value || []).reduce((sum, s) => sum + Number(s.owner_discount_value || 0), 0)
 );
 
-const totalDiscounts = computed(() => 
+const totalDiscounts = computed(() =>
   salesCustomerDiscountTotal.value + salesOwnerDiscountTotal.value
 );
 
-const finalSalesAmount = computed(() => 
+const finalSalesAmount = computed(() =>
   Math.max(0, salesWithServiceTotal.value - salesCustomerDiscountTotal.value - salesOwnerDiscountTotal.value)
 );
 
-// Note: This mirrors the table's Profit column: (total_amount - total_cost)
+// Note: mirrors the table's Profit column: (total_amount - total_cost)
 const salesProfitTotal = computed(() =>
   (sales.value || []).reduce(
+    (sum, s) => sum + (Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0)),
+    0
+  )
+);
+
+// ---------- Wrong Bills: totals ----------
+const wrongCount = computed(() => (wrongSales.value || []).length);
+const wrongQty = computed(() => (wrongSales.value || []).reduce((a, s) => a + saleQty(s), 0));
+const wrongAmount = computed(() => (wrongSales.value || []).reduce((a, s) => a + Number(s.total_amount || 0), 0));
+const wrongWithService = computed(() => (wrongSales.value || []).reduce((a, s) => a + priceWithService(s), 0));
+const wrongCustomerDiscount = computed(() => (wrongSales.value || []).reduce((a, s) => a + customerDiscountAmount(s), 0));
+const wrongOwnerDiscount = computed(() => (wrongSales.value || []).reduce((a, s) => a + Number(s.owner_discount_value || 0), 0));
+const wrongProfit = computed(() =>
+  (wrongSales.value || []).reduce(
     (sum, s) => sum + (Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0)),
     0
   )
@@ -446,7 +567,7 @@ const filterData = () => {
 };
 
 // Charts
-const sortDescending = (data) => 
+const sortDescending = (data) =>
   Object.entries(data).sort((a, b) => b[1] - a[1]).reduce((acc, [k, v]) => ((acc[k] = v), acc), {});
 
 const productQuantities = computed(() => {
@@ -473,12 +594,12 @@ const chartData = computed(() => ({
   }],
 }));
 
-const chartOptions = { 
-  responsive: true, 
+const chartOptions = {
+  responsive: true,
   maintainAspectRatio: false,
-  plugins: { 
-    legend: { display: true, position: "bottom" } 
-  } 
+  plugins: {
+    legend: { display: true, position: "bottom" }
+  }
 };
 
 const paymentMethodTotals = computed(() => {
@@ -498,7 +619,7 @@ const chartData1 = computed(() => ({
       "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#28a745",
       "#ffc107", "#17a2b8", "#e83e8c", "#fd7e14", "#6610f2", "#6f42c1",
       "#dc3545", "#adb5bd", "#20c997", "#ffc93c", "#6a0572", "#8ac926",
-      "#198754"
+      "#ff595e", "#198754"
     ],
   }],
 }));
@@ -514,7 +635,7 @@ const chartOptions1 = {
 
 const sortedEmployeeSales = computed(() =>
   Object.fromEntries(
-    Object.entries(props.employeeSalesSummary).sort(([, a], [, b]) => 
+    Object.entries(props.employeeSalesSummary).sort(([, a], [, b]) =>
       b["Total Sales Amount"] - a["Total Sales Amount"]
     )
   )
@@ -565,7 +686,6 @@ const downloadSalesTableExcel = () => {
     const custDisc = customerDiscountAmount(s);
     const owner = (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? "—") : "—";
     const ownerDisc = Number(s.owner_discount_value || 0);
-    // Match the table Profit column (gross: total - cost)
     const profit = Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0);
 
     return [
@@ -575,7 +695,7 @@ const downloadSalesTableExcel = () => {
       s.customer?.name ?? "N/A",
       qty,
       total,
-      svcPct,            // numeric; header clarifies it's %
+      svcPct,
       priceWSvc,
       custDisc,
       owner,
@@ -584,13 +704,12 @@ const downloadSalesTableExcel = () => {
     ];
   });
 
-  
   const aoa = [header, ...rows];
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-  // Auto column widths
+  // Auto col widths
   const widths = header.map((h, c) => {
     const contentLens = aoa.map(r => (r[c] == null ? 0 : String(r[c]).length));
     const maxLen = Math.max(h.length, ...contentLens);
@@ -598,7 +717,7 @@ const downloadSalesTableExcel = () => {
   });
   ws['!cols'] = widths;
 
-  // Number formats for money/qty/percent-like
+  // Formats
   const formatCols = {
     qty: 4,
     money: [5, 7, 8, 10, 11],
@@ -606,19 +725,15 @@ const downloadSalesTableExcel = () => {
   };
   const range = XLSX.utils.decode_range(ws['!ref']);
 
-  // Apply formats to data rows (skip header at R=0)
   for (let R = 1; R <= range.e.r; R++) {
-    // qty
     const qCell = ws[XLSX.utils.encode_cell({ r: R, c: formatCols.qty })];
     if (qCell && typeof qCell.v === "number") qCell.z = "0";
 
-    // money columns
     for (const C of formatCols.money) {
       const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
       if (cell && typeof cell.v === "number") cell.z = "0.00";
     }
 
-    // percent column (kept as number like 5 -> 5.00)
     const pCell = ws[XLSX.utils.encode_cell({ r: R, c: formatCols.percent })];
     if (pCell && typeof pCell.v === "number") pCell.z = "0.00";
   }
@@ -627,30 +742,102 @@ const downloadSalesTableExcel = () => {
   XLSX.writeFile(wb, `Sales_Report_${safe(dateRangeLabel.value)}.xlsx`);
 };
 
-// ---------- PDF/CSV Exports ----------
-const downloadEmployeeSalesPDF = () => {
-  const doc = new jsPDF();
-  doc.text("Top Employee Sales", 14, 10);
-  const rows = Object.entries(sortedEmployeeSales.value).map(([employee, entry]) => [
-    employee,
-    (entry["Total Sales Amount"] || 0).toLocaleString()
+// ---------- Wrong Bills: Excel & CSV ----------
+const downloadWrongBillsExcel = () => {
+  const header = [
+    "#","Date","Order Number","Customer","Qty",
+    "Total Price","Service Charge (%)","Price with Service",
+    "Customer Discounts","Owner","Owner Discount","Profit","Wrong"
+  ];
+
+  const rows = (wrongSales.value || []).map((s, i) => [
+    i + 1,
+    formatDate(s.sale_date),
+    s.order_id ? s.order_id : `Service - ${s.service_name || ""}`,
+    s.customer?.name ?? "N/A",
+    saleQty(s),
+    Number(s.total_amount || 0),
+    Number(s.service_charge || 0),
+    priceWithService(s),
+    customerDiscountAmount(s),
+    (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? "—") : "—",
+    Number(s.owner_discount_value || 0),
+    Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0),
+    "Wrong",
   ]);
-  autoTable(doc, { 
-    head: [["Employee", "Total Sales Amount"]], 
-    body: rows, 
-    startY: 20 
-  });
-  doc.save("EmployeeSales.pdf");
+
+  const aoa = [header, ...rows];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  ws['!cols'] = header.map(h => ({ wch: Math.min(Math.max(h.length + 4, 12), 40) }));
+
+  const moneyCols = [5, 7, 8, 10, 11];
+  const percentCol = 6;
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  for (let R = 1; R <= range.e.r; R++) {
+    for (const C of moneyCols) {
+      const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+      if (cell && typeof cell.v === "number") cell.z = "0.00";
+    }
+    const pCell = ws[XLSX.utils.encode_cell({ r: R, c: percentCol })];
+    if (pCell && typeof pCell.v === "number") pCell.z = "0.00";
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Wrong Bills");
+  XLSX.writeFile(wb, `Wrong_Bill_Report_${safe(dateRangeLabel.value)}.xlsx`);
 };
+
+const downloadWrongBillsCSV = () => {
+  const header = [
+    "#","Date","Order Number","Customer","Qty",
+    "Total Price","Service Charge (%)","Price with Service",
+    "Customer Discounts","Owner","Owner Discount","Profit","Wrong"
+  ];
+  const escapeCsv = (v) => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = (wrongSales.value || []).map((s, i) => [
+    i + 1,
+    formatDate(s.sale_date),
+    s.order_id ? s.order_id : `Service - ${s.service_name || ""}`,
+    s.customer?.name ?? "N/A",
+    saleQty(s),
+    (+s.total_amount || 0).toFixed(2),
+    (+s.service_charge || 0).toFixed(2),
+    priceWithService(s).toFixed(2),
+    customerDiscountAmount(s).toFixed(2),
+    (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? "—") : "—",
+    (+s.owner_discount_value || 0).toFixed(2),
+    (Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0)).toFixed(2),
+    "Wrong",
+  ]);
+
+  const csv = [header, ...rows].map(r => r.map(escapeCsv).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Wrong_Bill_Report_${safe(dateRangeLabel.value)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+ 
 
 const downloadProductQtyPDF = () => {
   const doc = new jsPDF();
   doc.text("Product Quantities", 14, 10);
   const rows = Object.entries(productQuantities.value).map(([product, qty]) => [product, qty]);
-  autoTable(doc, { 
-    head: [["Product Name", "Quantity"]], 
-    body: rows, 
-    startY: 20 
+  autoTable(doc, {
+    head: [["Product Name", "Quantity"]],
+    body: rows,
+    startY: 20
   });
   doc.save("ProductQuantities.pdf");
 };
@@ -662,47 +849,12 @@ const downloadPaymentMethodPDF = () => {
     m,
     `LKR ${Number(t || 0).toLocaleString()}`
   ]);
-  autoTable(doc, { 
-    head: [["Payment Method", "Total Amount"]], 
-    body: rows, 
-    startY: 20 
+  autoTable(doc, {
+    head: [["Payment Method", "Total Amount"]],
+    body: rows,
+    startY: 20
   });
   doc.save("PaymentMethodTotals.pdf");
-};
-
-const downloadSalesTableCSV = () => {
-  const header = [
-    "#","Date","Order Number","Customer","Owner","Qty",
-    "Total Price (LKR)","Service Charge (%)","Customer Discounts (LKR)",
-    "Owner Discount (LKR)","Profit (LKR)"
-  ];
-  const escapeCsv = (v) => {
-    const s = String(v ?? "");
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const rows = (sales.value || []).map((s, i) => [
-    i + 1,
-    formatDate(s.sale_date),
-    s.order_id ? s.order_id : `Service - ${s.service_name || ""}`,
-    s.customer?.name ?? "N/A",
-    (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? "—") : "—",
-    saleQty(s),
-    (+s.total_amount || 0).toFixed(2),
-    (+s.service_charge || 0).toFixed(2),
-    customerDiscountAmount(s).toFixed(2),
-    (+s.owner_discount_value || 0).toFixed(2),
-    saleProfit(s).toFixed(2),
-  ]);
-  const csv = [header, ...rows].map(r => r.map(escapeCsv).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Sales_Report_${safe(dateRangeLabel.value)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 };
 
 // const downloadSalesTablePDF = () => { /* ...kept as-is/commented... */ };
@@ -727,7 +879,7 @@ const downloadStockTablePDF = () => {
   doc.text(`Date range: ${dateRangeLabel.value} • Generated: ${new Date().toLocaleString()}`, 14, 18);
 
   const head = [[
-    "#", "Product", "Sales Qty", "Total Sales Value (LKR)", 
+    "#", "Product", "Sales Qty", "Total Sales Value (LKR)",
     "Price (LKR)", "Discount", "Price After Discount", "Profit"
   ]];
 
@@ -751,7 +903,10 @@ const downloadStockTablePDF = () => {
     margin: { top: 18, left: 8, right: 8 },
   });
 
-  
+  const totalsRow = [
+    "", "Totals:", totalSalesQty.value.toLocaleString(), "",
+    "", "", "", grandTotalProfit.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  ];
 
   autoTable(doc, {
     body: [totalsRow],
@@ -774,7 +929,7 @@ const downloadStockTablePDF = () => {
   doc.save(`Top_Products_Stock_${safe(dateRangeLabel.value)}.pdf`);
 };
 
-// DataTables init
+// DataTables init (stock table only)
 onMounted(() => {
   const jq = window.$;
   const $stock = jq && jq("#stockQtyTbl");
@@ -799,73 +954,73 @@ onMounted(() => {
 </script>
 
 <style>
-.dataTables_wrapper .dataTables_paginate { 
-  display: flex; 
-  justify-content: center; 
-  align-items: center; 
-  margin-top: 20px; 
+.dataTables_wrapper .dataTables_paginate {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
 }
 
-#salesTbl_filter, #stockQtyTbl_filter, #expenseTbl_filter { 
-  display: flex; 
-  justify-content: flex-end; 
-  align-items: center; 
-  margin-bottom: 16px; 
-  float: left; 
+#salesTbl_filter, #stockQtyTbl_filter, #expenseTbl_filter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 16px;
+  float: left;
 }
 
-#salesTbl_filter label, #stockQtyTbl_filter label, #expenseTbl_filter label { 
-  font-size: 17px; 
-  color: #000000; 
-  display: flex; 
-  align-items: center; 
+#salesTbl_filter label, #stockQtyTbl_filter label, #expenseTbl_filter label {
+  font-size: 17px;
+  color: #000000;
+  display: flex;
+  align-items: center;
 }
 
-#salesTbl_filter input[type="search"], 
-#stockQtyTbl_filter input[type="search"], 
+#salesTbl_filter input[type="search"],
+#stockQtyTbl_filter input[type="search"],
 #expenseTbl_filter input[type="search"] {
-  font-weight: 400; 
-  padding: 9px 15px; 
-  font-size: 14px; 
-  color: #000000cc; 
-  border: 1px solid rgb(209 213 219); 
-  border-radius: 5px; 
-  background: #fff; 
-  outline: none; 
+  font-weight: 400;
+  padding: 9px 15px;
+  font-size: 14px;
+  color: #000000cc;
+  border: 1px solid rgb(209 213 219);
+  border-radius: 5px;
+  background: #fff;
+  outline: none;
   transition: all 0.5s ease;
 }
 
-#salesTbl_filter input[type="search"]:focus, 
-#stockQtyTbl_filter input[type="search"]:focus, 
-#expenseTbl_filter input[type="search"]:focus { 
-  border: 1px solid #4b5563; 
-  box-shadow: none; 
+#salesTbl_filter input[type="search"]:focus,
+#stockQtyTbl_filter input[type="search"]:focus,
+#expenseTbl_filter input[type="search"]:focus {
+  border: 1px solid #4b5563;
+  box-shadow: none;
 }
 
-.dataTables_wrapper { 
-  margin-bottom: 10px; 
+.dataTables_wrapper {
+  margin-bottom: 10px;
 }
 </style>
 
 <style scoped>
-.chart-container { 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: center; 
-  width: 100%; 
-  height: calc(100% - 50px); 
-  position: relative; 
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: calc(100% - 50px);
+  position: relative;
 }
 
-thead { 
-  position: sticky; 
-  top: 0; 
-  z-index: 10; 
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.max-h-64 { 
-  max-height: 16rem; 
+.max-h-64 {
+  max-height: 16rem;
 }
 
 .num {

@@ -16,13 +16,12 @@ class ReportController extends Controller
 {
  
 
-  public function index(Request $request)
+public function index(Request $request)
 {
     if (!Gate::allows('hasRole', ['Admin','Owner'])) {
         abort(403, 'Unauthorized');
     }
 
-    // Dates (normalize to day bounds)
     $startDateRaw = $request->input('start_date');
     $endDateRaw   = $request->input('end_date');
 
@@ -40,10 +39,16 @@ class ReportController extends Controller
         }
     };
 
+    // 🔴 NEW: Reusable filter to exclude wrong bills
+    $applyValidBill = function ($q) {
+        $q->where('wrong_bill', 0);
+    };
+
     // -------- Top Products (sold in range via Sale.created_at) --------
     if ($from || $to) {
-        $productIds = SaleItem::whereHas('sale', function ($q) use ($applyCreatedWindow) {
+        $productIds = SaleItem::whereHas('sale', function ($q) use ($applyCreatedWindow, $applyValidBill) {
                 $applyCreatedWindow($q);
+                $applyValidBill($q); // ⬅️ exclude wrong bills
             })
             ->pluck('product_id')
             ->unique();
@@ -52,21 +57,42 @@ class ReportController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
     } else {
-        $products = Product::orderBy('created_at', 'desc')->get();
+        // Even without date filter, still exclude wrong bills for relevance
+        $productIds = SaleItem::whereHas('sale', function ($q) use ($applyValidBill) {
+                $applyValidBill($q); // ⬅️ exclude wrong bills
+            })
+            ->pluck('product_id')
+            ->unique();
+
+        $products = Product::whereIn('id', $productIds)
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     // -------- Sales (filter by created_at) --------
- $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner']);
-
+    $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner'])
+        ->where('wrong_bill', 0); 
 
     if ($from || $to) {
         $applyCreatedWindow($salesQuery);
     }
 
     // For qty per product (respect same window through parent sale)
-    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyCreatedWindow, $from, $to) {
+    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyCreatedWindow, $applyValidBill, $from, $to) {
         if ($from || $to) $applyCreatedWindow($q);
+        $applyValidBill($q); // ⬅️ exclude wrong bills
     });
+
+
+$wrongSales = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner'])
+    ->where('wrong_bill', 1)
+    ->when($from || $to, function ($q) use ($applyCreatedWindow) {
+        $applyCreatedWindow($q);
+    })
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+
 
     $salesQuantities = $salesQuantitiesQuery
         ->select('product_id')
@@ -84,9 +110,6 @@ class ReportController extends Controller
     $sales = $salesQuery->orderBy('created_at', 'desc')->get();
     $ownersList = Owner::with('items')->get();
 
-  
-
-
     // Helpers
     $customDiscountToLkr = function ($sale) {
         $gross = (float) ($sale->total_amount ?? 0);
@@ -95,7 +118,7 @@ class ReportController extends Controller
         return $type === 'percent' ? ($gross * $val / 100.0) : $val;
     };
 
-    // Category totals (from filtered sales)
+    // Category totals (from filtered sales only)
     $categorySales = [];
     foreach ($sales as $sale) {
         foreach ($sale->saleItems as $item) {
@@ -104,12 +127,12 @@ class ReportController extends Controller
         }
     }
 
-    // Payment totals (gross)
+    // Payment totals (gross) — filtered already
     $paymentMethodTotals = $sales->groupBy('payment_method')->map(
         fn($g) => (float) $g->sum('total_amount')
     )->toArray();
 
-    // Employee sales (NET)
+    // Employee sales (NET) — filtered already
     $employeeSalesSummary = [];
     foreach ($sales as $sale) {
         if (!$sale->employee) continue;
@@ -124,7 +147,7 @@ class ReportController extends Controller
         $employeeSalesSummary[$name]['Total Sales Amount'] += ($gross - $prodDisc - $customDisc);
     }
 
-    // Overall stats
+    // Overall stats — filtered already
     $totalSaleAmount         = (float) $sales->sum('total_amount');
     $totalCost               = (float) $sales->sum('total_cost');
     $totalProductDiscountLkr = (float) $sales->sum('discount');
@@ -133,18 +156,13 @@ class ReportController extends Controller
     $totalTransactions       = $sales->count();
     $averageTransactionValue = $totalTransactions > 0 ? ($totalSaleAmount / $totalTransactions) : 0;
 
-    // Distinct customers (same filter)
+    // Distinct customers — filtered already
     $totalCustomer = (clone $salesQuery)->distinct('customer_id')->count('customer_id');
-
-    
-
-    
-  
-
+ 
     return Inertia::render('Reports/Index', [
         'products'                  => $products,
         'sales'                     => $sales,
-
+        'wrongSales'                => $wrongSales,
         'totalSaleAmount'           => round($totalSaleAmount, 2),
         'totalDiscountLkr'          => round($totalProductDiscountLkr, 2),
         'totalCustomDiscountLkr'    => round($totalCustomDiscountLkr, 2),
@@ -155,12 +173,11 @@ class ReportController extends Controller
 
         'startDate'                 => $startDateRaw,
         'endDate'                   => $endDateRaw,
-        'ownersList'                   => $ownersList,
+        'ownersList'                => $ownersList,
 
         'categorySales'             => $categorySales,
         'employeeSalesSummary'      => $employeeSalesSummary,
         'paymentMethodTotals'       => $paymentMethodTotals,
-  
     ]);
 }
 

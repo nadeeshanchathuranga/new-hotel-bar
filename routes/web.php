@@ -100,6 +100,12 @@ Route::get('/test-owners', function () {
     Route::resource('employees', EmployeeController::class);
     Route::resource('stock-transition', StockTransactionController::class);
     Route::resource('transactionHistory', TransactionHistoryController::class );
+Route::post('/transactions/wrong-bill', [TransactionHistoryController::class, 'updateWrongBill'])
+    ->name('transactions.updateWrongBill');
+
+
+
+
     Route::post('/transactions/delete', [TransactionHistoryController::class, 'destroy'])->name('transactions.delete');
     Route::post('/transactions/bulk-delete', [TransactionHistoryController::class, 'bulkDelete']) ->name('transactions.bulkDelete');
     Route::resource('delivery', DeliveryController::class);

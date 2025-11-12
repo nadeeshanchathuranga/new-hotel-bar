@@ -105,4 +105,30 @@ class TransactionHistoryController extends Controller
 
 
 
+
+
+
+public function updateWrongBill(Request $request)
+{
+
+    
+    $data = $request->validate([
+        'order_id'   => ['required', 'string'],
+        'wrong_bill' => ['required', 'boolean'],
+    ]);
+
+    $sale = Sale::where('order_id', $data['order_id'])->firstOrFail();
+    $sale->wrong_bill = $data['wrong_bill'];
+    $sale->save();
+
+    return back()->with('success', 'Wrong bill status updated.');
+}
+
+
+
+
+
+
+
+
 }
