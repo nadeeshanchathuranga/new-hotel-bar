@@ -1,4 +1,5 @@
 <template>
+
   <Head title="POS" />
   <Banner />
   <div class="flex flex-col items-center justify-start min-h-screen py-8 space-y-4 bg-gray-100 px-36">
@@ -6,24 +7,44 @@
     <Header />
 
     <div class="w-5/6 py-12 space-y-16">
-      <div class="flex items-center justify-between space-x-4">
-        <div class="flex w-full space-x-4">
-          <Link href="/">
-            <img src="/images/back-arrow.png" class="w-14 h-14" />
-          </Link>
-          <p class="pt-3 text-4xl font-bold tracking-wide text-black uppercase">
-            PoS
-          </p>
-        </div>
-        <div class="flex items-center justify-end w-full space-x-4">
-          <p v-if="selectedTable?.orderId" class="text-3xl font-bold tracking-wide text-black">
-            Order ID : #{{ selectedTable.orderId }}
-          </p>
-          <p class="text-3xl text-black cursor-pointer">
-            <i @click="refreshData" class="ri-restart-line"></i>
-          </p>
-        </div>
-      </div>
+      
+
+
+
+
+      <div class="flex items-center justify-between w-full px-4 py-2">
+
+  <!-- Left Section: Back + PoS + Old Bill Button -->
+  <div class="flex items-center space-x-4">
+    <Link href="/">
+      <img src="/images/back-arrow.png" class="w-14 h-14 cursor-pointer hover:scale-105 transition" />
+    </Link>
+
+    <p class="text-4xl font-bold tracking-wide text-black uppercase">
+      PoS
+    </p>
+
+    <!-- Old Bill Button (Cashier only) -->
+    <a v-if="auth.user.role_type === 'Cashier'" href="/transactionHistory">
+      <button
+        class="ml-4 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl text-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-300">
+        Old Bill Check
+      </button>
+    </a>
+  </div>
+
+  <!-- Right Section: Order ID + Refresh -->
+  <div class="flex items-center space-x-4">
+    <p v-if="selectedTable?.orderId" class="text-3xl font-bold tracking-wide text-black">
+      Order ID : #{{ selectedTable.orderId }}
+    </p>
+    <p class="text-3xl text-black cursor-pointer">
+      <i @click="refreshData" class="ri-restart-line"></i>
+    </p>
+  </div>
+
+</div>
+
 
       <div class="flex w-full gap-4">
         <!-- Left: Tables + Customer -->
@@ -37,42 +58,30 @@
             </div>
 
             <!-- Live Bill shown separately -->
-            <div
-              :class="[
-                'w-full flex flex-col justify-center items-center rounded-xl px-3 py-4 border border-[#2563EB] text-center mb-3',
-                (selectedTable && tables[0] && tables[0].id === selectedTable.id) ? 'bg-blue-100' : 'hover:bg-blue-50',
-              ]"
-              @click="selectTable(tables[0])"
-            >
+            <div :class="[
+              'w-full flex flex-col justify-center items-center rounded-xl px-3 py-4 border border-[#2563EB] text-center mb-3',
+              (selectedTable && tables[0] && tables[0].id === selectedTable.id) ? 'bg-blue-100' : 'hover:bg-blue-50',
+            ]" @click="selectTable(tables[0])">
               <div class="text-xl text-black font-bold">Live Bill</div>
             </div>
 
             <!-- exactly 25 tables (5 x 5) -->
             <div class="grid grid-cols-5 gap-3">
-              <div
-                v-for="table in tables.slice(1, 26)"
-                :key="table.id"
-                :class="[
-                  'w-full flex flex-col justify-center items-center rounded-xl px-2 py-4 border border-[#2563EB] text-center',
-                  (selectedTable && table.id === selectedTable.id) ? 'bg-blue-100'
-                    : (table.products && table.products.length > 0 ? 'bg-yellow-100' : ''),
-                  'hover:bg-blue-50',
-                ]"
-                @click="selectTable(table)"
-              >
+              <div v-for="table in tables.slice(1, 26)" :key="table.id" :class="[
+                'w-full flex flex-col justify-center items-center rounded-xl px-2 py-4 border border-[#2563EB] text-center',
+                (selectedTable && table.id === selectedTable.id) ? 'bg-blue-100'
+                  : (table.products && table.products.length > 0 ? 'bg-yellow-100' : ''),
+                'hover:bg-blue-50',
+              ]" @click="selectTable(table)">
                 <div class="text-lg text-black font-bold">Table</div>
                 <div class="text-4xl text-black font-bold">
                   {{ table.number - 1 }}
                 </div>
 
-                <button
-                  @click.stop="sendKOT(table)"
-                  :disabled="isKOTDisabled(table)"
-                  :class="[
-                    'mt-2 px-3 py-1 tracking-wide text-white text-sm font-semibold rounded-lg',
-                    isKOTDisabled(table) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-                  ]"
-                >
+                <button @click.stop="sendKOT(table)" :disabled="isKOTDisabled(table)" :class="[
+                  'mt-2 px-3 py-1 tracking-wide text-white text-sm font-semibold rounded-lg',
+                  isKOTDisabled(table) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                ]">
                   {{ table.kotStatus === 'sent' ? 'KOT Sent' : 'KOT' }}
                 </button>
               </div>
@@ -89,14 +98,9 @@
                 <label for="cust_name" class="block text-sm font-medium text-white mb-1">
                   Customer Name
                 </label>
-                <input
-                  id="cust_name"
-                  v-model.trim="customer.name"
-                  type="text"
-                  autocomplete="name"
+                <input id="cust_name" v-model.trim="customer.name" type="text" autocomplete="name"
                   placeholder="Enter Customer Name"
-                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
 
               <!-- Contact + Search -->
@@ -105,24 +109,12 @@
                   Contact Number
                 </label>
                 <div class="relative w-full">
-                  <input
-                    id="cust_contact"
-                    v-model="customer.contactNumber"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]{7,15}"
-                    minlength="7"
-                    maxlength="15"
-                    autocomplete="tel"
+                  <input id="cust_contact" v-model="customer.contactNumber" type="text" inputmode="numeric"
+                    pattern="[0-9]{7,15}" minlength="7" maxlength="15" autocomplete="tel"
                     placeholder="Enter Customer Contact Number"
-                    class="w-full h-12 px-4 pr-16 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    @click="searchCustomer"
-                    type="button"
-                    aria-label="Search customer by contact"
-                    class="absolute top-0 right-0 h-12 px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
-                  >
+                    class="w-full h-12 px-4 pr-16 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <button @click="searchCustomer" type="button" aria-label="Search customer by contact"
+                    class="absolute top-0 right-0 h-12 px-4 text-white bg-blue-600 rounded-r-md hover:bg-blue-700">
                     Search
                   </button>
                 </div>
@@ -134,16 +126,9 @@
                 <label for="cust_email" class="block text-sm font-medium text-white mb-1">
                   Email
                 </label>
-                <input
-                  id="cust_email"
-                  v-model.trim="customer.email"
-                  type="email"
-                  inputmode="email"
-                  autocomplete="email"
-                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-                  placeholder="Enter Customer Email"
-                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <input id="cust_email" v-model.trim="customer.email" type="email" inputmode="email" autocomplete="email"
+                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$" placeholder="Enter Customer Email"
+                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
 
               <!-- Birthdate -->
@@ -151,14 +136,9 @@
                 <label for="bdate" class="block text-sm font-medium text-white mb-1">
                   Birthdate
                 </label>
-                <input
-                  id="bdate"
-                  v-model="customer.bdate"
-                  type="date"
-                  autocomplete="bday"
+                <input id="bdate" v-model="customer.bdate" type="date" autocomplete="bday"
                   placeholder="Customer Birthdate"
-                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                  class="w-full px-4 py-4 text-black placeholder-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
 
               <!-- Employee / Cashier -->
@@ -166,17 +146,10 @@
                 <label for="employee_id" class="block text-sm font-medium text-white mb-1">
                   Employee
                 </label>
-                <select
-                  id="employee_id"
-                  v-model="employee_id"
-                  class="w-full h-12 px-4 text-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                <select id="employee_id" v-model="employee_id"
+                  class="w-full h-12 px-4 text-black bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Select Employee</option>
-                  <option
-                    v-for="emp in allemployee"
-                    :key="emp.id"
-                    :value="emp.id"
-                  >
+                  <option v-for="emp in allemployee" :key="emp.id" :value="emp.id">
                     {{ emp.name }}<span v-if="emp.code"> ({{ emp.code }})</span>
                   </option>
                 </select>
@@ -198,36 +171,25 @@
               </h2>
 
 
-<div class="flex flex-col md:flex-row items-center gap-4">
-  <!-- Wholesale / Retail Toggle -->
-  <div class="flex items-center bg-gray-100 rounded-full px-3 py-1">
-    <span
-      class="text-xl font-semibold cursor-pointer"
-      :class="!isConvertPrice ? 'text-blue-600' : 'text-gray-500'"
-      @click="setMode(false)"
-    >
-      LKR
-    </span>
+              <div class="flex flex-col md:flex-row items-center gap-4">
+                <!-- Wholesale / Retail Toggle -->
+                <div class="flex items-center bg-gray-100 rounded-full px-3 py-1">
+                  <span class="text-xl font-semibold cursor-pointer"
+                    :class="!isConvertPrice ? 'text-blue-600' : 'text-gray-500'" @click="setMode(false)">
+                    LKR
+                  </span>
 
-    <div
-      class="mx-2 w-10 h-6 bg-blue-300 rounded-full relative cursor-pointer"
-      @click="toggleMode"
-    >
-      <div
-        class="w-5 h-6 bg-white rounded-full shadow transition-transform duration-300"
-        :class="isConvertPrice ? 'translate-x-5' : 'translate-x-0'"
-      ></div>
-    </div>
+                  <div class="mx-2 w-10 h-6 bg-blue-300 rounded-full relative cursor-pointer" @click="toggleMode">
+                    <div class="w-5 h-6 bg-white rounded-full shadow transition-transform duration-300"
+                      :class="isConvertPrice ? 'translate-x-5' : 'translate-x-0'"></div>
+                  </div>
 
-    <span
-      class="text-xl font-semibold cursor-pointer"
-      :class="isConvertPrice ? 'text-blue-600' : 'text-gray-500'"
-      @click="setMode(true)"
-    >
-      Dollar
-    </span>
-  </div>
-</div>
+                  <span class="text-xl font-semibold cursor-pointer"
+                    :class="isConvertPrice ? 'text-blue-600' : 'text-gray-500'" @click="setMode(true)">
+                    Dollar
+                  </span>
+                </div>
+              </div>
 
               <span class="flex cursor-pointer" @click="isSelectModalOpen = true">
                 <p class="text-xl text-blue-600 font-bold">Food Menu</p>
@@ -236,15 +198,10 @@
             </div>
 
             <div class="w-full px-12">
-              <div
-                v-if="selectedTable?.id === 'default'"
-                class="w-full flex justify-center items-center mb-4 space-x-4"
-              >
-                <select
-                  id="order_type"
-                  v-model="selectedTable.order_type"
-                  class="w-full text-center p-2 border-2 border-black rounded cursor-pointer"
-                >
+              <div v-if="selectedTable?.id === 'default'"
+                class="w-full flex justify-center items-center mb-4 space-x-4">
+                <select id="order_type" v-model="selectedTable.order_type"
+                  class="w-full text-center p-2 border-2 border-black rounded cursor-pointer">
                   <option value="" disabled>Select an Order Type</option>
                   <option value="takeaway">Takeaway</option>
                   <option value="pickup">Delivery</option>
@@ -256,19 +213,13 @@
               <p class="text-2xl text-red-500">No Products to show</p>
             </div>
 
-            <div
-              class="flex flex-col w-full space-y-4 py-4 border-b border-gray-200"
-              v-for="item in selectedTable.products"
-              :key="item.id"
-            >
+            <div class="flex flex-col w-full space-y-4 py-4 border-b border-gray-200"
+              v-for="item in selectedTable.products" :key="item.id">
               <div class="flex items-start space-x-4">
                 <!-- Product Image -->
                 <div class="w-20 h-20 flex-shrink-0">
-                  <img
-                    :src="item.image ? `/${item.image}` : '/images/placeholder.jpg'"
-                    alt="Product Image"
-                    class="object-cover w-full h-full rounded-lg border border-gray-300"
-                  />
+                  <img :src="item.image ? `/${item.image}` : '/images/placeholder.jpg'" alt="Product Image"
+                    class="object-cover w-full h-full rounded-lg border border-gray-300" />
                 </div>
 
                 <!-- Product Details -->
@@ -277,34 +228,28 @@
                     <h3 class="text-lg font-semibold text-gray-900">
                       {{ item.name }}
                     </h3>
-                    <button
-                      @click="removeProduct(item.id)"
-                      class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-300 hover:bg-gray-400 transition-colors"
-                    >
+                    <button @click="removeProduct(item.id)"
+                      class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-300 hover:bg-gray-400 transition-colors">
                       <i class="ri-close-line text-xl text-red-600 font-semibold"></i>
                     </button>
                   </div>
 
                   <p class="text-lg font-medium text-gray-700">
-                {{ item.selling_price }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+                    {{ item.selling_price }} {{ isConvertPrice ? 'USD' : 'LKR' }}
                   </p>
 
                   <!-- Quantity Controls -->
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                      <button
-                        @click="decrementQuantity(item.id)"
-                        class="flex items-center justify-center w-8 h-8 text-white bg-gray-800 hover:bg-gray-900 rounded-full transition-colors"
-                      >
+                      <button @click="decrementQuantity(item.id)"
+                        class="flex items-center justify-center w-8 h-8 text-white bg-gray-800 hover:bg-gray-900 rounded-full transition-colors">
                         <i class="ri-subtract-line"></i>
                       </button>
                       <span class="text-lg font-medium w-8 text-center">
                         {{ item.quantity }}
                       </span>
-                      <button
-                        @click="incrementQuantity(item.id)"
-                        class="flex items-center justify-center w-8 h-8 text-white bg-gray-800 hover:bg-gray-900 rounded-full transition-colors"
-                      >
+                      <button @click="incrementQuantity(item.id)"
+                        class="flex items-center justify-center w-8 h-8 text-white bg-gray-800 hover:bg-gray-900 rounded-full transition-colors">
                         <i class="ri-add-line"></i>
                       </button>
                     </div>
@@ -315,26 +260,24 @@
                         <button
                           v-if="item.discount && item.discount > 0 && item.apply_discount == false && !appliedCoupon"
                           @click="applyDiscount(item.id)"
-                          class="text-md py-1 px-3 bg-green-500 hover:bg-green-600 rounded-full font-medium text-white transition-colors"
-                        >
+                          class="text-md py-1 px-3 bg-green-500 hover:bg-green-600 rounded-full font-medium text-white transition-colors">
                           Apply {{ item.discount }}% off
                         </button>
                         <button
                           v-if="item.discount && item.discount > 0 && item.apply_discount == true && !appliedCoupon"
                           @click="removeDiscount(item.id)"
-                          class="text-md py-1 px-3 bg-red-500 hover:bg-red-600 rounded-full font-medium text-white transition-colors"
-                        >
+                          class="text-md py-1 px-3 bg-red-500 hover:bg-red-600 rounded-full font-medium text-white transition-colors">
                           Remove {{ item.discount }}% Off
                         </button>
                       </div>
-                     <p class="text-lg font-bold text-gray-900">
-  {{
-    Number(
-      (item.apply_discount ? Number(item.discounted_price) : Number(item.selling_price))
-      * Number(item.quantity)
-    ).toFixed(2)
-  }} {{ isConvertPrice ? 'USD' : 'LKR' }}
-</p>
+                      <p class="text-lg font-bold text-gray-900">
+                        {{
+                          Number(
+                            (item.apply_discount ? Number(item.discounted_price) : Number(item.selling_price))
+                        * Number(item.quantity)
+                        ).toFixed(2)
+                        }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+                      </p>
 
                     </div>
                   </div>
@@ -348,176 +291,126 @@
 
 
 
-<!-- Summary -->
-<div class="w-full pt-6 space-y-2">
-  <div class="flex items-center justify-between w-full px-16">
-    <p class="text-xl">Sub Total</p>
-    <p class="text-xl">
-      {{ subtotal }} {{ isConvertPrice ? 'USD' : 'LKR' }}
-    </p>
-  </div>
+            <!-- Summary -->
+            <div class="w-full pt-6 space-y-2">
+              <div class="flex items-center justify-between w-full px-16">
+                <p class="text-xl">Sub Total</p>
+                <p class="text-xl">
+                  {{ subtotal }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+                </p>
+              </div>
 
-  <div class="flex items-center justify-between w-full px-16 py-2 pb-4 border-b border-black">
-    <p class="text-xl">Discount</p>
-    <p class="text-xl">
-      ( {{ totalDiscount }} {{ isConvertPrice ? 'USD' : 'LKR' }} )
-    </p>
-  </div>
+              <div class="flex items-center justify-between w-full px-16 py-2 pb-4 border-b border-black">
+                <p class="text-xl">Discount</p>
+                <p class="text-xl">
+                  ( {{ totalDiscount }} {{ isConvertPrice ? 'USD' : 'LKR' }} )
+                </p>
+              </div>
 
-  <div
-    v-if="selectedTable.order_type === 'pickup'"
-    class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
-  >
-    <select
-      v-model="selectedTable.delivery_charge"
-      class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
-    >
-      <option value="">Select Delivery Charge</option>
-      <option
-        v-for="charge in delivery"
-        :key="charge.id"
-        :value="charge.delivery_charge"
-      >
-        {{ charge.delivery_charge }} {{ isConvertPrice ? 'USD' : 'LKR' }}
-      </option>
-    </select>
-  </div>
+              <div v-if="selectedTable.order_type === 'pickup'"
+                class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black">
+                <select v-model="selectedTable.delivery_charge"
+                  class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer">
+                  <option value="">Select Delivery Charge</option>
+                  <option v-for="charge in delivery" :key="charge.id" :value="charge.delivery_charge">
+                    {{ charge.delivery_charge }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+                  </option>
+                </select>
+              </div>
 
-  <div
-    v-if="selectedTable && selectedTable.id !== 'default' && selectedTable.order_type !== 'pickup'"
-    class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
-  >
-    <select
-      v-model="selectedTable.service_charge"
-      class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
-    >
-      <option value="">Select Service Charge</option>
-      <option
-  v-for="charge in serviceCharge"
-  :key="charge.id"
-  :value="parseFloat(charge.service_charge)"
->
-  {{ charge.service_charge }}%
-  {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
-</option>
+              <div v-if="selectedTable && selectedTable.id !== 'default' && selectedTable.order_type !== 'pickup'"
+                class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black">
+                <select v-model="selectedTable.service_charge"
+                  class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer">
+                  <option value="">Select Service Charge</option>
+                  <option v-for="charge in serviceCharge" :key="charge.id" :value="parseFloat(charge.service_charge)">
+                    {{ charge.service_charge }}%
+                    {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
+                  </option>
 
-    </select>
-  </div>
+                </select>
+              </div>
 
- <div class="flex items-center justify-between border-b border-gray-300 pb-3">
-                    <p class="text-xl font-medium text-gray-800">Custom Discount</p>
-                    <div class="flex items-center gap-2">
-                      <CurrencyInput
-                        ref="customDiscountRef"
-                        v-model="custom_discount"
-                        @blur="validateCustomDiscount"
-                        placeholder="Enter value"
-                        class="rounded-md px-3 py-1 text-xl text-gray-900 focus:ring-2 focus:ring-blue-500"
-                      />
-                      <select
-                        ref="customDiscountTypeRef"
-                        v-model="custom_discount_type"
-                        class="px-8 py-1 rounded-md text-xl text-gray-900 focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="fixed">Rs</option>
-                        <option value="percent">%</option>
-                      </select>
+              <div class="flex items-center justify-between border-b border-gray-300 pb-3">
+                <p class="text-xl font-medium text-gray-800">Custom Discount</p>
+                <div class="flex items-center gap-2">
+                  <CurrencyInput ref="customDiscountRef" v-model="custom_discount" @blur="validateCustomDiscount"
+                    placeholder="Enter value"
+                    class="rounded-md px-3 py-1 text-xl text-gray-900 focus:ring-2 focus:ring-blue-500" />
+                  <select ref="customDiscountTypeRef" v-model="custom_discount_type"
+                    class="px-8 py-1 rounded-md text-xl text-gray-900 focus:ring-2 focus:ring-blue-500">
+                    <option value="fixed">Rs</option>
+                    <option value="percent">%</option>
+                  </select>
+                </div>
+              </div>
+
+
+
+
+
+              <div class="flex items-center justify-between w-full px-16 pt-4">
+                <p class="text-3xl text-black">Total</p>
+                <p class="text-3xl text-black">
+                  {{ total }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+                </p>
+              </div>
+
+              <div v-if="selectedPaymentMethod === 'cash'"
+                class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black">
+                <p class="text-xl text-black">Cash</p>
+                <span class="flex items-center">
+                  <CurrencyInput v-if="selectedTable" v-model="selectedTable.cash"
+                    :options="{ currency: isConvertPrice ? 'USD' : 'LKR' }" />
+                  <span class="ml-2">{{ isConvertPrice ? 'USD' : 'LKR' }}</span>
+                </span>
+              </div>
+
+              <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
+                <div class="flex items-center justify-between w-full mt-4">
+                  <p class="text-xl text-black">Select Bank</p>
+                  <Combobox v-model="selectedTable.bank_name">
+                    <div class="relative w-[150px]">
+                      <ComboboxInput class="w-full h-12 border border-gray-300 rounded-md py-2 px-3 text-black"
+                        @change="query = $event.target.value" placeholder="Search Bank" />
+                      <ComboboxOptions v-if="filteredBanks.length"
+                        class="absolute w-full bg-white border border-gray-300 shadow-md rounded-md mt-1 max-h-40 overflow-auto">
+                        <ComboboxOption v-for="bank in filteredBanks" :key="bank" :value="bank"
+                          class="p-2 hover:bg-blue-100 cursor-pointer">
+                          {{ bank }}
+                        </ComboboxOption>
+                      </ComboboxOptions>
                     </div>
-                  </div>
+                  </Combobox>
+                </div>
+              </div>
 
+              <div v-if="selectedPaymentMethod === 'card'"
+                class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black">
+                <select v-model="selectedTable.bank_service_charge"
+                  class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer">
+                  <option value="">Select Bank Service Charge</option>
+                  <option v-for="charge in bankCharge" :key="charge.id" :value="parseFloat(charge.bank_service_charge)">
+                    {{ charge.bank_service_charge }}%
+                    {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
+                  </option>
+                </select>
+              </div>
 
+              <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
+                <div class="flex items-center justify-between w-full mt-4">
+                  <p class="text-xl text-black">Last 4 Digits of Card</p>
+                  <input v-model="selectedTable.card_last4" type="text" maxlength="4" pattern="[0-9]{4}"
+                    placeholder="Last 4 Digits"
+                    class="w-36 text-center border border-gray-300 rounded-lg py-2 text-x" />
+                </div>
+              </div>
 
-
-
-  <div class="flex items-center justify-between w-full px-16 pt-4">
-    <p class="text-3xl text-black">Total</p>
-    <p class="text-3xl text-black">
-      {{ total }} {{ isConvertPrice ? 'USD' : 'LKR' }}
-    </p>
-  </div>
-
-  <div
-    v-if="selectedPaymentMethod === 'cash'"
-    class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black"
-  >
-    <p class="text-xl text-black">Cash</p>
-    <span class="flex items-center">
-      <CurrencyInput
-        v-if="selectedTable"
-        v-model="selectedTable.cash"
-        :options="{ currency: isConvertPrice ? 'USD' : 'LKR' }"
-      />
-      <span class="ml-2">{{ isConvertPrice ? 'USD' : 'LKR' }}</span>
-    </span>
-  </div>
-
-  <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
-    <div class="flex items-center justify-between w-full mt-4">
-      <p class="text-xl text-black">Select Bank</p>
-      <Combobox v-model="selectedTable.bank_name">
-        <div class="relative w-[150px]">
-          <ComboboxInput
-            class="w-full h-12 border border-gray-300 rounded-md py-2 px-3 text-black"
-            @change="query = $event.target.value"
-            placeholder="Search Bank"
-          />
-          <ComboboxOptions
-            v-if="filteredBanks.length"
-            class="absolute w-full bg-white border border-gray-300 shadow-md rounded-md mt-1 max-h-40 overflow-auto"
-          >
-            <ComboboxOption
-              v-for="bank in filteredBanks"
-              :key="bank"
-              :value="bank"
-              class="p-2 hover:bg-blue-100 cursor-pointer"
-            >
-              {{ bank }}
-            </ComboboxOption>
-          </ComboboxOptions>
-        </div>
-      </Combobox>
-    </div>
-  </div>
-
-  <div
-    v-if="selectedPaymentMethod === 'card'"
-    class="flex items-center justify-between w-full px-8 pt-4 pb-4 border-b border-black"
-  >
-    <select
-      v-model="selectedTable.bank_service_charge"
-      class="w-full py-3 text-xl font-bold tracking-wider text-black bg-white rounded-lg cursor-pointer"
-    >
-      <option value="">Select Bank Service Charge</option>
-      <option
-        v-for="charge in bankCharge"
-        :key="charge.id"
-        :value="parseFloat(charge.bank_service_charge)"
-      >
-        {{ charge.bank_service_charge }}%
-        {{ charge.service_check === true || charge.service_check === 'true' ? ' (Default)' : '' }}
-      </option>
-    </select>
-  </div>
-
-  <div v-if="selectedPaymentMethod === 'card'" class="w-full px-16 pt-4 pb-4 border-b border-black mt-4">
-    <div class="flex items-center justify-between w-full mt-4">
-      <p class="text-xl text-black">Last 4 Digits of Card</p>
-      <input
-        v-model="selectedTable.card_last4"
-        type="text"
-        maxlength="4"
-        pattern="[0-9]{4}"
-        placeholder="Last 4 Digits"
-        class="w-36 text-center border border-gray-300 rounded-lg py-2 text-x"
-      />
-    </div>
-  </div>
-
-  <div class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black">
-    <p class="text-xl text-black">Balance</p>
-    <p>{{ balance }} {{ isConvertPrice ? 'USD' : 'LKR' }}</p>
-  </div>
-</div>
+              <div class="flex items-center justify-between w-full px-16 pt-4 pb-4 border-b border-black">
+                <p class="text-xl text-black">Balance</p>
+                <p>{{ balance }} {{ isConvertPrice ? 'USD' : 'LKR' }}</p>
+              </div>
+            </div>
 
 
 
@@ -532,10 +425,8 @@
               <div class="flex flex-col gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm">
                 <div class="flex items-center justify-between">
                   <h3 class="text-lg font-semibold text-gray-900">Owner Discount</h3>
-                  <span
-                    v-if="ownerDiscountApplied"
-                    class="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200"
-                  >
+                  <span v-if="ownerDiscountApplied"
+                    class="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
                     <i class="ri-check-line mr-1"></i> Applied
                   </span>
                 </div>
@@ -543,10 +434,8 @@
                 <div class="flex items-end gap-3">
                   <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-                    <select
-                      v-model="ownerForm.owner_id"
-                      class="w-full h-11 px-3 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
+                    <select v-model="ownerForm.owner_id"
+                      class="w-full h-11 px-3 border border-gray-300 rounded-lg text-black bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                       <option value="">Select Owner</option>
                       <option v-for="o in owners" :key="o.id" :value="o.id">
                         {{ o.name }} ({{ o.code }})
@@ -557,22 +446,14 @@
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    @click="fetchOwnerDiscount"
-                    :disabled="!ownerForm.owner_id"
-                    class="h-11 px-5 rounded-lg font-semibold text-white transition
+                  <button type="button" @click="fetchOwnerDiscount" :disabled="!ownerForm.owner_id" class="h-11 px-5 rounded-lg font-semibold text-white transition
                            disabled:opacity-50 disabled:cursor-not-allowed
-                           bg-blue-600 hover:bg-blue-700"
-                  >
+                           bg-blue-600 hover:bg-blue-700">
                     Fetch
                   </button>
                 </div>
 
-                <div
-                  v-if="ownerFetch.owner_id"
-                  class="rounded-xl border border-gray-100 bg-gray-50 p-4"
-                >
+                <div v-if="ownerFetch.owner_id" class="rounded-xl border border-gray-100 bg-gray-50 p-4">
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div class="flex flex-col">
                       <span class="text-xs text-gray-500">Monthly Allocation</span>
@@ -596,10 +477,9 @@
 
                   <div class="mt-3">
                     <div class="h-2 w-full bg-white border border-gray-200 rounded-full overflow-hidden">
-                      <div
-                        class="h-2 bg-blue-500"
-                        :style="{ width: Math.min(100, Math.round(((ownerFetch.current_discount || 0) / (ownerFetch.discount_value || 1)) * 100)) + '%'}"
-                      ></div>
+                      <div class="h-2 bg-blue-500"
+                        :style="{ width: Math.min(100, Math.round(((ownerFetch.current_discount || 0) / (ownerFetch.discount_value || 1)) * 100)) + '%' }">
+                      </div>
                     </div>
                     <div class="mt-1.5 flex justify-between text-[11px] text-gray-500">
                       <span>0</span>
@@ -607,29 +487,20 @@
                     </div>
                   </div>
 
-                  <p
-                    v-if="!ownerFetch.available && ownerFetch.message"
-                    class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg"
-                  >
+                  <p v-if="!ownerFetch.available && ownerFetch.message"
+                    class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
                     <i class="ri-alert-line mr-1"></i>{{ ownerFetch.message }}
                   </p>
 
                   <div class="mt-3 flex items-center gap-3">
-                    <button
-                      v-if="!ownerDiscountApplied"
-                      @click="applyOwnerDiscount"
-                      :disabled="!ownerFetch.available || ownerBalance <= 0"
-                      class="h-10 px-4 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700
-                             disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                    <button v-if="!ownerDiscountApplied" @click="applyOwnerDiscount"
+                      :disabled="!ownerFetch.available || ownerBalance <= 0" class="h-10 px-4 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700
+                             disabled:opacity-50 disabled:cursor-not-allowed">
                       Apply Owner Discount
                     </button>
 
-                    <button
-                      v-else
-                      @click="removeOwnerDiscount"
-                      class="h-10 px-4 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700"
-                    >
+                    <button v-else @click="removeOwnerDiscount"
+                      class="h-10 px-4 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700">
                       Remove Owner Discount
                     </button>
                   </div>
@@ -639,21 +510,11 @@
                   <label class="text-sm font-medium text-gray-700">Override value (LKR)</label>
 
                   <div class="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      :max="ownerBalance"
-                      v-model.number="ownerFetch.override_amount"
-                      class="w-44 h-11 px-3 border border-gray-300 rounded-lg text-black bg-white
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0.00"
-                    />
-                    <button
-                      type="button"
-                      @click="ownerFetch.override_amount = ownerBalance"
-                      class="h-11 px-3 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
-                    >
+                    <input type="number" step="0.01" min="0" :max="ownerBalance"
+                      v-model.number="ownerFetch.override_amount" class="w-44 h-11 px-3 border border-gray-300 rounded-lg text-black bg-white
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0.00" />
+                    <button type="button" @click="ownerFetch.override_amount = ownerBalance"
+                      class="h-11 px-3 text-sm font-medium rounded-lg border border-gray-300 bg-white hover:bg-gray-50">
                       Use Max
                     </button>
                   </div>
@@ -664,16 +525,15 @@
                       <span class="font-semibold">{{ ownerBalance.toFixed(2) }} LKR</span>
                     </span>
                     <span class="mx-2 text-gray-300">•</span>
-                    <span
-                      :class="[
-                        'font-semibold',
-                        Number(ownerFetch.override_amount || 0) > ownerBalance ? 'text-red-600' : 'text-green-700'
-                      ]"
-                    >
+                    <span :class="[
+                      'font-semibold',
+                      Number(ownerFetch.override_amount || 0) > ownerBalance ? 'text-red-600' : 'text-green-700'
+                    ]">
                       Override: {{ Number(ownerFetch.override_amount || 0).toFixed(2) }} LKR
                     </span>
                     <p class="text-xs text-gray-500 mt-0.5">
-                      Tip: you can’t exceed the remaining amount. Click <span class="font-medium">Use Max</span> to auto-fill.
+                      Tip: you can’t exceed the remaining amount. Click <span class="font-medium">Use Max</span> to
+                      auto-fill.
                     </p>
                   </div>
                 </div>
@@ -683,49 +543,34 @@
             <!-- Kitchen Note -->
             <div class="w-full my-1">
               <div class="relative flex items-center">
-                <input
-                  id="coupon"
-                  v-model="selectedTable.kitchen_note"
-                  type="text"
-                  placeholder="Kitchen Note"
-                  class="w-full h-16 px-6 pr-40 text-lg text-gray-800 placeholder-gray-500 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <input id="coupon" v-model="selectedTable.kitchen_note" type="text" placeholder="Kitchen Note"
+                  class="w-full h-16 px-6 pr-40 text-lg text-gray-800 placeholder-gray-500 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
               </div>
             </div>
 
             <div class="flex flex-col w-full space-y-8">
               <div class="flex items-center justify-center w-full pt-8 space-x-8">
                 <p class="text-xl text-black">Payment Method :</p>
-                <div
-                  @click="selectedPaymentMethod = 'cash'"
-                  :class="[
-                    'cursor-pointer w-[100px]  border border-black rounded-xl flex flex-col justify-center items-center text-center',
-                    selectedPaymentMethod === 'cash' ? 'bg-yellow-500 font-bold' : 'text-black',
-                  ]"
-                >
+                <div @click="selectedPaymentMethod = 'cash'" :class="[
+                  'cursor-pointer w-[100px]  border border-black rounded-xl flex flex-col justify-center items-center text-center',
+                  selectedPaymentMethod === 'cash' ? 'bg-yellow-500 font-bold' : 'text-black',
+                ]">
                   <img src="/images/money-stack.png" alt="" class="w-24" />
                 </div>
-                <div
-                  @click="selectedPaymentMethod = 'card'"
-                  :class="[
-                    'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center',
-                    selectedPaymentMethod === 'card' ? 'bg-yellow-500 font-bold' : 'text-black',
-                  ]"
-                >
+                <div @click="selectedPaymentMethod = 'card'" :class="[
+                  'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center',
+                  selectedPaymentMethod === 'card' ? 'bg-yellow-500 font-bold' : 'text-black',
+                ]">
                   <img src="/images/bank-card.png" alt="" class="w-24" />
                 </div>
               </div>
 
               <div class="flex items-center justify-center w-full">
-                <button
-                  @click="submitOrder"
-                  type="button"
-                  :disabled="!selectedTable || selectedTable.products.length === 0"
-                  :class="[
+                <button @click="submitOrder" type="button"
+                  :disabled="!selectedTable || selectedTable.products.length === 0" :class="[
                     'w-full bg-black py-4 text-2xl font-bold tracking-wider text-center text-white uppercase rounded-xl',
                     !selectedTable || selectedTable.products.length === 0 ? 'cursor-not-allowed' : 'cursor-pointer',
-                  ]"
-                >
+                  ]">
                   <i class="pr-4 ri-add-circle-fill"></i> Confirm Order
                 </button>
               </div>
@@ -737,44 +582,23 @@
     </div>
   </div>
 
-  <PosSuccessModel
-  :open="isSuccessModalOpen"
-  @update:open="handleModalOpenUpdate"
-  :products="selectedTable.products"
-  :cashier="loggedInUser"
-  :customer="customer"
-  :orderId="selectedTable.orderId"
-  :cash="selectedTable.cash"
-  :balance="balance"
-  :subTotal="subtotal"
-  :totalDiscount="totalDiscount"
-  :total="total"
-  :custom_discount="customDiscCalculated"
-  :custom_discount_type="customDiscountType" 
-  :delivery_charge="selectedTable.delivery_charge"
-  :service_charge="selectedTable.service_charge"
-  :bank_service_charge="selectedTable.bank_service_charge"
-  :selectedTable="selectedTable"
-  :kitchen_note="selectedTable.kitchen_note"
-  :selectedPaymentMethod="selectedPaymentMethod"
-  :order_type="selectedTable.order_type"
-  :owner_discount_value="ownerDiscountValue"
-  :owner_code="ownerCodeValue"
-  :is-convert-price="isConvertPrice"
-/>
+  <PosSuccessModel :open="isSuccessModalOpen" @update:open="handleModalOpenUpdate" :products="selectedTable.products"
+    :cashier="loggedInUser" :customer="customer" :orderId="selectedTable.orderId" :cash="selectedTable.cash"
+    :balance="balance" :subTotal="subtotal" :totalDiscount="totalDiscount" :total="total"
+    :custom_discount="customDiscCalculated" :custom_discount_type="customDiscountType"
+    :delivery_charge="selectedTable.delivery_charge" :service_charge="selectedTable.service_charge"
+    :bank_service_charge="selectedTable.bank_service_charge" :selectedTable="selectedTable"
+    :kitchen_note="selectedTable.kitchen_note" :selectedPaymentMethod="selectedPaymentMethod"
+    :order_type="selectedTable.order_type" :owner_discount_value="ownerDiscountValue" :owner_code="ownerCodeValue"
+    :is-convert-price="isConvertPrice" />
 
   <AlertModel v-model:open="isAlertModalOpen" :message="message" />
 
-  <SelectProductModel
-    v-model:open="isSelectModalOpen"
-    :allcategories="allcategories"
-    :colors="colors"
-    :sizes="sizes"
-    @selected-products="handleSelectedProducts"
-  />
+  <SelectProductModel v-model:open="isSelectModalOpen" :allcategories="allcategories" :colors="colors" :sizes="sizes"
+    @selected-products="handleSelectedProducts" />
   <Footer />
 </template>
- 
+
 
 
 
@@ -807,6 +631,7 @@ const props = defineProps({
   bankCharge: Array,
   serviceCharge: Array,
   owners: Array,
+  auth: Object,
   isConvertPrice: { type: Boolean, default: false },
 });
 
@@ -863,19 +688,19 @@ const bank_service_charge = ref("");
 
 // bank list + filter
 const bankOptions = ref([
-  "Alliance Finance Co PLC","Amana Bank","American Express Bank Ltd","Asia Asset Finance PLC",
-  "Bank of Ceylon","Bank of China","CDB","Cargils Bank Ltd","Central Bank of Sri Lanka",
-  "Central Finance PLC","City Bank","Commercial Bank","Commercial Credit",
-  "Cooperative Regional Rural Bank LTD","DFCC Bank PLC","Deutsche Bank","Dialog Finance PLC",
-  "Fintrex Finance Limited","HDFC Bank","HNB Finance PLC","HSBC","Hatton National Bank",
-  "Indian Bank","Indian Overseas Bank","Kanrich Finance Bank","LB Finance",
-  "LOLC Development Finance Plc","LOLC Finance Plc","Lanka Credit and Business Finance Limited",
-  "MBSL","MCB","Mercantile Investment","NDB Bank","NSB","Nations Trust Bank",
-  "Peoples Leasing and Finance PLC","Pan Asia Bank","Peoples Bank","Public Bank Berhad",
-  "RDB","Richard Pieris Finance","SDB","SENKADAGALA FINANCE","SMIB","Sampath Bank",
-  "Sarvodaya Development Finace LTD","Seylan Bank","Singer Finance(Lanka) Bank",
-  "Siyapatha Finance PLC","Softlogic Finance PLC","Standard Charted Bank",
-  "State Bank of India","Union Bank"
+  "Alliance Finance Co PLC", "Amana Bank", "American Express Bank Ltd", "Asia Asset Finance PLC",
+  "Bank of Ceylon", "Bank of China", "CDB", "Cargils Bank Ltd", "Central Bank of Sri Lanka",
+  "Central Finance PLC", "City Bank", "Commercial Bank", "Commercial Credit",
+  "Cooperative Regional Rural Bank LTD", "DFCC Bank PLC", "Deutsche Bank", "Dialog Finance PLC",
+  "Fintrex Finance Limited", "HDFC Bank", "HNB Finance PLC", "HSBC", "Hatton National Bank",
+  "Indian Bank", "Indian Overseas Bank", "Kanrich Finance Bank", "LB Finance",
+  "LOLC Development Finance Plc", "LOLC Finance Plc", "Lanka Credit and Business Finance Limited",
+  "MBSL", "MCB", "Mercantile Investment", "NDB Bank", "NSB", "Nations Trust Bank",
+  "Peoples Leasing and Finance PLC", "Pan Asia Bank", "Peoples Bank", "Public Bank Berhad",
+  "RDB", "Richard Pieris Finance", "SDB", "SENKADAGALA FINANCE", "SMIB", "Sampath Bank",
+  "Sarvodaya Development Finace LTD", "Seylan Bank", "Singer Finance(Lanka) Bank",
+  "Siyapatha Finance PLC", "Softlogic Finance PLC", "Standard Charted Bank",
+  "State Bank of India", "Union Bank"
 ]);
 const query = ref("");
 const filteredBanks = computed(() =>
@@ -894,8 +719,8 @@ const savedTables = JSON.parse(localStorage.getItem("tables")) || [
     orderId: generateOrderId(),
     products: [],
     balance: 0,
-   custom_discount: 0.0,
-custom_discount_type: "fixed",     // percent only
+    custom_discount: 0.0,
+    custom_discount_type: "fixed",     // percent only
     kitchen_note: "",
     order_type: "",
     delivery_charge: "",
@@ -922,8 +747,8 @@ const seedFixedTables = () => {
       products: [],
       cash: 0.0,
       balance: 0.0,
-     custom_discount: 0.0,
-custom_discount_type: "fixed",
+      custom_discount: 0.0,
+      custom_discount_type: "fixed",
       kitchen_note: "",
       order_type: "",
       delivery_charge: "",
@@ -955,8 +780,8 @@ custom_discount_type: "fixed",
         products: [],
         cash: 0.0,
         balance: 0.0,
-       custom_discount: 0.0,
-custom_discount_type: "fixed",
+        custom_discount: 0.0,
+        custom_discount_type: "fixed",
         kitchen_note: "",
         order_type: "",
         delivery_charge: "",
@@ -1080,8 +905,8 @@ const refreshData = async () => {
       products: [],
       cash: 0.0,
       balance: 0.0,
-   custom_discount: 0.0,
-custom_discount_type: "fixed",   // percent-only
+      custom_discount: 0.0,
+      custom_discount_type: "fixed",   // percent-only
       kitchen_note: "",
       order_type: "",
       delivery_charge: "",
@@ -1107,7 +932,7 @@ custom_discount_type: "fixed",   // percent-only
 
     try {
       await router.reload({
-        only: ["loggedInUser","allcategories","allemployee","colors","sizes","delivery","serviceCharge","bankCharge"],
+        only: ["loggedInUser", "allcategories", "allemployee", "colors", "sizes", "delivery", "serviceCharge", "bankCharge"],
         preserveState: false, preserveScroll: false
       });
     } catch (e) {
@@ -1176,8 +1001,8 @@ watch(
   { deep: true }
 );
 
-const addTable = () => {};
-const selectTable = (table) => { selectedTable.value = table; ensureDefaultServiceCharge(selectedTable.value);};
+const addTable = () => { };
+const selectTable = (table) => { selectedTable.value = table; ensureDefaultServiceCharge(selectedTable.value); };
 const removeTable = (index) => {
   const removed = tables.value[index];
   localStorage.setItem(`removedTable_${removed.number}`, JSON.stringify(removed));
@@ -1192,8 +1017,8 @@ const removeSelectedTable = () => {
     products: [],
     cash: 0.0,
     balance: 0.0,
-   custom_discount: 0.0,
-custom_discount_type: "fixed",    // percent-only
+    custom_discount: 0.0,
+    custom_discount_type: "fixed",    // percent-only
     kitchen_note: "",
     order_type: "",
     isConvertPrice: "",
@@ -1235,9 +1060,9 @@ const submitOrder = async () => {
       employee_id: employee_id.value,
       paymentMethod: selectedPaymentMethod.value,
       userId: props.loggedInUser.id,
-      orderId: selectedTable.value.orderId,   
-         custom_discount: selectedTable.value.custom_discount, 
-  custom_discount_type: selectedTable.value.custom_discount_type,
+      orderId: selectedTable.value.orderId,
+      custom_discount: selectedTable.value.custom_discount,
+      custom_discount_type: selectedTable.value.custom_discount_type,
       // now a computed amount
       cash: selectedTable.value.cash,
       bank_name: selectedTable.value.bank_name,
@@ -1304,7 +1129,7 @@ const customDiscCalculated = computed(() => {
 });
 
 
- const total = computed(() => {
+const total = computed(() => {
   const subtotalValue = parseFloat(subtotal.value) || 0;
   const discountValue = parseFloat(totalDiscount.value) || 0;
 
@@ -1362,7 +1187,7 @@ watch(
   { deep: true }
 );
 
- 
+
 /* =========================
    COUPON & BARCODE
 ========================= */
@@ -1537,7 +1362,7 @@ const sendKOT = (table) => {
     `).join("");
     const orderType =
       table.order_type === "takeaway" ? "Takeaway" :
-      table.order_type === "pickup" ? "Delivery" : "Dine In";
+        table.order_type === "pickup" ? "Delivery" : "Dine In";
     const noteBlock = table.kitchen_note ? `<div class="note"><b>Kitchen Note:</b> ${table.kitchen_note}</div>` : "";
 
     const receiptHTML = `
@@ -1565,7 +1390,7 @@ const sendKOT = (table) => {
   </style>
 </head>
 <body>
-  <h1>KOT Note - (${String(kotNo).padStart(3,'0')})</h1>
+  <h1>KOT Note - (${String(kotNo).padStart(3, '0')})</h1>
   <div class="kot-head">
     <div class="cell"><b>Date:</b> ${dateStr}</div>
     <div class="cell"><b>Time:</b> ${timeStr}</div>
