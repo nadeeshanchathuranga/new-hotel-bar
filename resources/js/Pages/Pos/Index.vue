@@ -549,21 +549,62 @@
             </div>
 
             <div class="flex flex-col w-full space-y-8">
-              <div class="flex items-center justify-center w-full pt-8 space-x-8">
-                <p class="text-xl text-black">Payment Method :</p>
-                <div @click="selectedPaymentMethod = 'cash'" :class="[
-                  'cursor-pointer w-[100px]  border border-black rounded-xl flex flex-col justify-center items-center text-center',
-                  selectedPaymentMethod === 'cash' ? 'bg-yellow-500 font-bold' : 'text-black',
-                ]">
-                  <img src="/images/money-stack.png" alt="" class="w-24" />
-                </div>
-                <div @click="selectedPaymentMethod = 'card'" :class="[
-                  'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center',
-                  selectedPaymentMethod === 'card' ? 'bg-yellow-500 font-bold' : 'text-black',
-                ]">
-                  <img src="/images/bank-card.png" alt="" class="w-24" />
-                </div>
-              </div>
+
+
+
+
+
+
+<div class="w-full pt-8 flex flex-col items-center space-y-6">
+
+  <!-- Print Button -->
+ <button
+  type="button"
+  @click="printBill"
+  :disabled="!selectedTable || selectedTable.products.length === 0"
+  :class="[
+    'group relative flex items-center justify-center gap-2.5 px-6 py-3.5 text-base font-semibold rounded-lg transition-all duration-200 min-w-[160px]',
+    !selectedTable || selectedTable.products.length === 0
+      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
+      : 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:from-blue-500 hover:to-blue-600 active:scale-[0.98] border-2 border-blue-500'
+  ]"
+>
+  <i :class="[
+    'ri-printer-line text-xl transition-transform duration-200',
+    !selectedTable || selectedTable.products.length === 0 ? '' : 'group-hover:scale-110'
+  ]"></i>
+  <span>Print Bill</span>
+  
+   
+</button>
+
+
+  <!-- Payment Row -->
+  <div class="flex items-center justify-center space-x-6">
+
+    <p class="text-xl font-semibold text-black">Payment Method :</p>
+
+    <!-- Cash -->
+   <div @click="selectedPaymentMethod = 'cash'" :class="[ 'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center', selectedPaymentMethod === 'cash' ? 'bg-yellow-500 font-bold' : 'text-black', ]">
+
+
+
+      <img src="/images/money-stack.png" class="w-20" />
+      <span class="mt-2 font-semibold">Cash</span>
+    </div>
+
+    <!-- Card -->
+   <div @click="selectedPaymentMethod = 'card'" :class="[ 'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center', selectedPaymentMethod === 'card' ? 'bg-yellow-500 font-bold' : 'text-black', ]">
+      <img src="/images/bank-card.png" class="w-20" />
+      <span class="mt-2 font-semibold">Card</span>
+    </div>
+
+  </div>
+</div>
+
+
+
+              
 
               <div class="flex items-center justify-center w-full">
                 <button @click="submitOrder" type="button"
@@ -1438,4 +1479,261 @@ const searchCustomer = async () => {
     console.error("Error fetching customer:", e.response?.data || e.message);
   }
 };
+
+const printBill = () => {
+  const table = selectedTable.value;
+  if (!table || !Array.isArray(table.products) || table.products.length === 0) {
+    isAlertModalOpen.value = true;
+    message.value = "No items to print.";
+    return;
+  }
+
+  const currencyLabel = isConvertPrice.value ? "USD" : "LKR";
+
+  const sub = parseFloat(subtotal.value) || 0;
+  const disc = parseFloat(totalDiscount.value) || 0;
+  const customDisc = parseFloat(customDiscCalculated.value) || 0;
+  const totalValue = parseFloat(total.value) || 0;
+
+  // Delivery charge (only if pickup / delivery)
+  let deliveryChargeValue = 0;
+  if (table.order_type === "pickup") {
+    deliveryChargeValue = parseFloat(table.delivery_charge) || 0;
+  }
+
+  // Service charge (percent of subtotal)
+  const serviceRate = parseFloat(table.service_charge) || 0;
+  const serviceAmount = (sub * serviceRate) / 100;
+
+  // Bank service charge
+  const bankRate = parseFloat(table.bank_service_charge) || 0;
+  const preBankTotal = sub - disc - customDisc + deliveryChargeValue + serviceAmount;
+  const bankAmount = (preBankTotal * bankRate) / 100;
+
+  const orderType =
+    table.order_type === "takeaway"
+      ? "Takeaway"
+      : table.order_type === "pickup"
+      ? "Delivery"
+      : "Dine In";
+
+  // Build product rows
+  const productsRows = table.products
+    .map((p) => {
+      const unitPrice = Number(
+        p.apply_discount ? p.discounted_price : p.selling_price
+      ) || 0;
+      const lineTotal = unitPrice * Number(p.quantity || 0);
+      return `
+        <tr>
+          <td>
+            ${p.name || ""}
+            <br><span style="font-size: 8px; font-weight: bold; font-style: italic;">
+              (${unitPrice.toFixed(2)} ${currencyLabel}${p.discount > 0 && p.apply_discount ? ` • ${p.discount}% off` : ""})
+            </span>
+          </td>
+          <td style="text-align:center;">${p.quantity}</td>
+          <td style="text-align:right;">${lineTotal.toFixed(2)} ${currencyLabel}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  // Calculate total discount
+  const totalDiscountValue = disc + customDisc;
+
+  // Conditional sections
+  const maybeSubTotal = sub > 0
+    ? `<div><span>Sub Total</span><span>${sub.toFixed(2)} ${currencyLabel}</span></div>`
+    : "";
+
+  const maybeDiscount = totalDiscountValue > 0
+    ? `<div><span>Discount</span><span>(${totalDiscountValue.toFixed(2)}) ${currencyLabel}</span></div>`
+    : "";
+
+  const maybeDelivery = deliveryChargeValue > 0
+    ? `<div><span>Delivery Charge</span><span>${deliveryChargeValue.toFixed(2)} ${currencyLabel}</span></div>`
+    : "";
+
+  const maybeService = serviceAmount > 0
+    ? `<div><span>Service Charge (${serviceRate.toFixed(2)}%)</span><span>${serviceAmount.toFixed(2)} ${currencyLabel}</span></div>`
+    : "";
+
+  const maybeBank = bankAmount > 0
+    ? `<div><span>Bank Service (${bankRate.toFixed(2)}%)</span><span>${bankAmount.toFixed(2)} ${currencyLabel}</span></div>`
+    : "";
+
+  const maybeTotal = totalValue > 0
+    ? `<div style="font-weight:bold;"><span>Total</span><span>${totalValue.toFixed(2)} ${currencyLabel}</span></div>`
+    : "";
+
+  // Total discount highlight box
+  const maybeTotalDiscBox = totalDiscountValue > 0
+    ? `
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin:8px 0;
+        padding:10px 5px;
+        border:1px solid #000;    
+        font-size:12px;
+        border-radius:0px;
+        font-weight:700;
+      ">
+        <span style="font-size:12px;letter-spacing:.02em;">TOTAL DISCOUNT</span>
+        <span style="font-size:12px;">
+          ${totalDiscountValue.toFixed(2)} ${currencyLabel}
+        </span>
+      </div>
+    `
+    : '';
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString();
+  const timeStr = now.toLocaleTimeString();
+
+  // Get company info safely (adjust variable names based on your actual code)
+  const companyName = typeof companyInfo !== 'undefined' && companyInfo?.value?.name ? companyInfo.value.name : "";
+  const companyAddress = typeof companyInfo !== 'undefined' && companyInfo?.value?.address ? companyInfo.value.address : "";
+  const companyPhone = typeof companyInfo !== 'undefined' && companyInfo?.value?.phone ? companyInfo.value.phone : "";
+  const companyPhone2 = typeof companyInfo !== 'undefined' && companyInfo?.value?.phone2 ? companyInfo.value.phone2 : "";
+  const companyEmail = typeof companyInfo !== 'undefined' && companyInfo?.value?.email ? companyInfo.value.email : "";
+  
+  const cashierName = typeof cashier !== 'undefined' && cashier?.value?.name ? cashier.value.name : "";
+  const paymentMethod = typeof selectedPaymentMethod !== 'undefined' ? (selectedPaymentMethod?.value || "") : "";
+
+  const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bill</title>
+  <style>
+    @media print {
+      body { margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+    body { background:#fff; font-size:12px; font-family:Arial,sans-serif; margin:0; padding:10px; color:#000; }
+    .header { text-align:center; margin-bottom:16px; }
+    .header h1 { font-size:20px; font-weight:bold; margin:0; }
+    .header p { font-size:10px; margin:4px 0; }
+    .section { margin: 8px 0 16px; }
+    .info-row { display:flex; justify-content:space-between; font-size:12px; margin-top:8px; }
+    .info-row p { margin:0; font-weight:bold; }
+    .info-row small { font-weight:normal; }
+    table { width:100%; font-size:12px; border-collapse:collapse; margin-top:8px; }
+    th, td { padding:6px 8px; }
+    th { text-align:left; }
+    td { text-align:right; }
+    td:first-child { text-align:left; }
+    .badge { font-weight:bold; border:1px solid #000; text-align:center; padding:5px; margin:8px 0; }
+    .totals { border-top:1px solid #000; padding-top:8px; font-size:12px; }
+    .totals div { display:flex; justify-content:space-between; margin-bottom:8px; }
+    .footer { text-align:center; font-size:10px; margin-top:16px; }
+    .footer p { margin:6px 0; }
+    .italic { font-style:italic; }
+  </style>
+</head>
+<body>
+  <div class="receipt-container">
+    <div class="header">
+      <img src="/images/billlog.png" style="width:200px; height:100px;" />
+      ${companyName ? `<h1>${companyName}</h1>` : ""}
+      ${companyAddress ? `<p>${companyAddress}</p>` : ""}
+      ${
+        companyPhone || companyPhone2 || companyEmail
+          ? `<p>${companyPhone} ${companyPhone2 ? " | " + companyPhone2 : ""} ${companyEmail ? " | " + companyEmail : ""}</p>`
+          : ""
+      }
+    </div>
+
+    <div class="section">
+      <div class="info-row">
+        <div><p>Date:</p><small>${dateStr}</small></div>
+        <div><p>Order No:</p><small>${table.orderId}</small></div>
+      </div>
+      <div class="info-row">
+        <div><p>Table:</p><small>${table.id === "default" ? "Live Bill" : table.number - 1}</small></div>
+        <div><p>Cashier:</p><small>${cashierName}</small></div>
+      </div>
+       
+      <div class="badge"><small>Order Type: ${orderType}</small></div>
+    </div>
+
+    <div class="section">
+      <table>
+        <thead>
+          <tr>
+            <th>Items</th>
+            <th style="text-align:center;">Qty</th>
+            <th style="text-align:right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productsRows}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="totals">
+      ${maybeSubTotal}
+      ${maybeDiscount}
+      ${maybeDelivery}
+      ${maybeService}
+      ${maybeBank}
+      ${maybeTotal}
+      ${maybeTotalDiscBox}
+    </div>
+
+    ${
+      table.kitchen_note
+        ? `<div style="font-weight:bold; text-align:left; border-top:1px solid #000; border-bottom:1px solid #000; padding:10px 0;">
+             <small>Note: ${table.kitchen_note}</small>
+           </div>`
+        : ""
+    }
+
+    <div class="footer">
+      <p>THANK YOU COME AGAIN</p>
+      <p class="italic">Let the quality define its own standards</p>
+      <p style="font-weight:bold;">Powered by JAAN Network Ltd.</p>
+      <p>${timeStr}</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  const w = window.open("", "_blank");
+  if (!w) {
+    isAlertModalOpen.value = true;
+    message.value = "Popup blocked. Allow popups to print bill.";
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => {
+    w.focus();
+    w.print();
+    w.close();
+  };
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </script>
