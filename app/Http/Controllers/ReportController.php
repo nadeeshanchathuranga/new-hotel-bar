@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Report;
+use App\Models\Owner;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Http\Request;
@@ -17,55 +18,222 @@ class ReportController extends Controller
 
 public function index(Request $request)
 {
-    if (!Gate::allows('hasRole', ['Admin'])) {
+    if (!Gate::allows('hasRole', ['Admin','Owner'])) {
         abort(403, 'Unauthorized');
     }
 
-    // Raw query params (may be empty strings)
-    $startInput = $request->input('start_date', '');
-    $endInput   = $request->input('end_date', '');
+    $startDateRaw = $request->input('start_date');
+    $endDateRaw   = $request->input('end_date');
 
-    // Parse to Carbon or null. If you store `sale_date` as DATE (no time), use ->toDateString().
-    // If it's DATETIME, keep full Carbon. We'll use endOfDay for inclusivity.
-    $start = $startInput ? Carbon::parse($startInput)->startOfDay() : null;
-    $end   = $endInput   ? Carbon::parse($endInput)->endOfDay()   : null;
+    $from = $startDateRaw ? Carbon::parse($startDateRaw)->startOfDay() : null;
+    $to   = $endDateRaw   ? Carbon::parse($endDateRaw)->endOfDay()     : null;
 
-    // --- Build range helper ---
-    $applyRangeToSale = function ($q) use ($start, $end) {
-        if ($start && $end) {
-            // full range
-            $q->whereBetween('sale_date', [$start, $end]);
-        } elseif ($start) {
-            $q->where('sale_date', '>=', $start);
-        } elseif ($end) {
-            $q->where('sale_date', '<=', $end);
+    // Reusable created_at window
+    $applyCreatedWindow = function ($q) use ($from, $to) {
+        if ($from && $to) {
+            $q->whereBetween('created_at', [$from, $to]);
+        } elseif ($from) {
+            $q->where('created_at', '>=', $from);
+        } elseif ($to) {
+            $q->where('created_at', '<=', $to);
         }
     };
 
-    // === PRODUCTS filtered to "sold in range" (if any bound) ===
-    // Find product IDs that appear in SaleItems whose Sale is inside the range.
-    $productIdsQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyRangeToSale) {
-        $applyRangeToSale($q);
+    // 🔴 NEW: Reusable filter to exclude wrong bills
+    $applyValidBill = function ($q) {
+        $q->where('wrong_bill', 0);
+    };
+
+    // -------- Top Products (sold in range via Sale.created_at) --------
+    if ($from || $to) {
+        $productIds = SaleItem::whereHas('sale', function ($q) use ($applyCreatedWindow, $applyValidBill) {
+                $applyCreatedWindow($q);
+                $applyValidBill($q); // ⬅️ exclude wrong bills
+            })
+            ->pluck('product_id')
+            ->unique();
+
+        $products = Product::whereIn('id', $productIds)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    } else {
+        // Even without date filter, still exclude wrong bills for relevance
+        $productIds = SaleItem::whereHas('sale', function ($q) use ($applyValidBill) {
+                $applyValidBill($q); // ⬅️ exclude wrong bills
+            })
+            ->pluck('product_id')
+            ->unique();
+
+        $products = Product::whereIn('id', $productIds)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    // -------- Sales (filter by created_at) --------
+    $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner'])
+        ->where('wrong_bill', 0); 
+
+    if ($from || $to) {
+        $applyCreatedWindow($salesQuery);
+    }
+
+    // For qty per product (respect same window through parent sale)
+    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyCreatedWindow, $applyValidBill, $from, $to) {
+        if ($from || $to) $applyCreatedWindow($q);
+        $applyValidBill($q); // ⬅️ exclude wrong bills
     });
 
-    // If no date bounds given, show all products (as before)
-    if ($start || $end) {
-        $productIds = $productIdsQuery->pluck('product_id')->unique();
-        $products = Product::whereIn('id', $productIds)->orderBy('created_at', 'desc')->get();
+
+$wrongSales = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner'])
+    ->where('wrong_bill', 1)
+    ->when($from || $to, function ($q) use ($applyCreatedWindow) {
+        $applyCreatedWindow($q);
+    })
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+
+
+    $salesQuantities = $salesQuantitiesQuery
+        ->select('product_id')
+        ->selectRaw('SUM(quantity) as total_sales_qty')
+        ->groupBy('product_id')
+        ->get()
+        ->keyBy('product_id');
+
+    // Attach sales_qty to products
+    $products->transform(function ($product) use ($salesQuantities) {
+        $product->sales_qty = (float) ($salesQuantities->get($product->id)->total_sales_qty ?? 0);
+        return $product;
+    });
+
+    $sales = $salesQuery->orderBy('created_at', 'desc')->get();
+    $ownersList = Owner::with('items')->get();
+
+    // Helpers
+    $customDiscountToLkr = function ($sale) {
+        $gross = (float) ($sale->total_amount ?? 0);
+        $val   = (float) ($sale->custom_discount ?? 0);
+        $type  = $sale->custom_discount_type ?? 'fixed';
+        return $type === 'percent' ? ($gross * $val / 100.0) : $val;
+    };
+
+    // Category totals (from filtered sales only)
+    $categorySales = [];
+    foreach ($sales as $sale) {
+        foreach ($sale->saleItems as $item) {
+            $categoryName = $item->product->category->name ?? 'No Category';
+            $categorySales[$categoryName] = ($categorySales[$categoryName] ?? 0) + (float) $item->total_price;
+        }
+    }
+
+    // Payment totals (gross) — filtered already
+    $paymentMethodTotals = $sales->groupBy('payment_method')->map(
+        fn($g) => (float) $g->sum('total_amount')
+    )->toArray();
+
+    // Employee sales (NET) — filtered already
+    $employeeSalesSummary = [];
+    foreach ($sales as $sale) {
+        if (!$sale->employee) continue;
+        $name = $sale->employee->name;
+        $employeeSalesSummary[$name] ??= [
+            'Employee Name' => $name,
+            'Total Sales Amount' => 0,
+        ];
+        $gross       = (float) ($sale->total_amount ?? 0);
+        $prodDisc    = (float) ($sale->discount ?? 0);
+        $customDisc  = $customDiscountToLkr($sale);
+        $employeeSalesSummary[$name]['Total Sales Amount'] += ($gross - $prodDisc - $customDisc);
+    }
+
+    // Overall stats — filtered already
+    $totalSaleAmount         = (float) $sales->sum('total_amount');
+    $totalCost               = (float) $sales->sum('total_cost');
+    $totalProductDiscountLkr = (float) $sales->sum('discount');
+    $totalCustomDiscountLkr  = (float) $sales->reduce(fn($c, $s) => $c + $customDiscountToLkr($s), 0.0);
+    $netProfit               = $totalSaleAmount - $totalCost - ($totalProductDiscountLkr + $totalCustomDiscountLkr);
+    $totalTransactions       = $sales->count();
+    $averageTransactionValue = $totalTransactions > 0 ? ($totalSaleAmount / $totalTransactions) : 0;
+
+    // Distinct customers — filtered already
+    $totalCustomer = (clone $salesQuery)->distinct('customer_id')->count('customer_id');
+ 
+    return Inertia::render('Reports/Index', [
+        'products'                  => $products,
+        'sales'                     => $sales,
+        'wrongSales'                => $wrongSales,
+        'totalSaleAmount'           => round($totalSaleAmount, 2),
+        'totalDiscountLkr'          => round($totalProductDiscountLkr, 2),
+        'totalCustomDiscountLkr'    => round($totalCustomDiscountLkr, 2),
+        'netProfit'                 => round($netProfit, 2),
+        'totalTransactions'         => $totalTransactions,
+        'averageTransactionValue'   => round($averageTransactionValue, 2),
+        'totalCustomer'             => $totalCustomer,
+
+        'startDate'                 => $startDateRaw,
+        'endDate'                   => $endDateRaw,
+        'ownersList'                => $ownersList,
+
+        'categorySales'             => $categorySales,
+        'employeeSalesSummary'      => $employeeSalesSummary,
+        'paymentMethodTotals'       => $paymentMethodTotals,
+    ]);
+}
+
+
+
+
+ public function kotIndex(Request $request)
+{
+    if (!Gate::allows('hasRole', ['Admin','Owner'])) {
+        abort(403, 'Unauthorized');
+    }
+
+    // Dates (normalize to day bounds)
+    $startDateRaw = $request->input('start_date');
+    $endDateRaw   = $request->input('end_date');
+
+    $from = $startDateRaw ? Carbon::parse($startDateRaw)->startOfDay() : null;
+    $to   = $endDateRaw   ? Carbon::parse($endDateRaw)->endOfDay()     : null;
+
+    // Reusable created_at window
+    $applyCreatedWindow = function ($q) use ($from, $to) {
+        if ($from && $to) {
+            $q->whereBetween('created_at', [$from, $to]);
+        } elseif ($from) {
+            $q->where('created_at', '>=', $from);
+        } elseif ($to) {
+            $q->where('created_at', '<=', $to);
+        }
+    };
+
+    // -------- Top Products (sold in range via Sale.created_at) --------
+    if ($from || $to) {
+        $productIds = SaleItem::whereHas('sale', function ($q) use ($applyCreatedWindow) {
+                $applyCreatedWindow($q);
+            })
+            ->pluck('product_id')
+            ->unique();
+
+        $products = Product::whereIn('id', $productIds)
+            ->orderBy('created_at', 'desc')
+            ->get();
     } else {
         $products = Product::orderBy('created_at', 'desc')->get();
     }
 
-    // === SALES (drives Sales Table + charts/totals) ===
-    $salesQuery = Sale::whereHas('saleItems.product.category')
-        ->with(['saleItems.product.category', 'employee', 'customer']);
+    // -------- Sales (filter by created_at) --------
+ $salesQuery = Sale::with(['saleItems.product.category', 'employee', 'customer', 'owner']);
 
-    // Apply date range (if any)
-    $applyRangeToSale($salesQuery);
 
-    // === sales_qty per product computed in the SAME filtered window ===
-    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyRangeToSale) {
-        $applyRangeToSale($q);
+    if ($from || $to) {
+        $applyCreatedWindow($salesQuery);
+    }
+
+    // For qty per product (respect same window through parent sale)
+    $salesQuantitiesQuery = SaleItem::query()->whereHas('sale', function ($q) use ($applyCreatedWindow, $from, $to) {
+        if ($from || $to) $applyCreatedWindow($q);
     });
 
     $salesQuantities = $salesQuantitiesQuery
@@ -75,75 +243,104 @@ public function index(Request $request)
         ->get()
         ->keyBy('product_id');
 
-    // Attach sales_qty to each product
+    // Attach sales_qty to products
     $products->transform(function ($product) use ($salesQuantities) {
-        $product->sales_qty = $salesQuantities->get($product->id)?->total_sales_qty ?? 0;
+        $product->sales_qty = (float) ($salesQuantities->get($product->id)->total_sales_qty ?? 0);
         return $product;
     });
 
-    // Pull sales (filtered + ordered)
-    $sales = $salesQuery->orderBy('sale_date', 'desc')->get();
+    $sales = $salesQuery->orderBy('created_at', 'desc')->get();
+    $ownersList = Owner::with('items')->get();
 
-    // Category sales (based on filtered sales)
+  
+
+
+    // Helpers
+    $customDiscountToLkr = function ($sale) {
+        $gross = (float) ($sale->total_amount ?? 0);
+        $val   = (float) ($sale->custom_discount ?? 0);
+        $type  = $sale->custom_discount_type ?? 'fixed';
+        return $type === 'percent' ? ($gross * $val / 100.0) : $val;
+    };
+
+    // Category totals (from filtered sales)
     $categorySales = [];
     foreach ($sales as $sale) {
         foreach ($sale->saleItems as $item) {
             $categoryName = $item->product->category->name ?? 'No Category';
-            // If you want by item total, use item totals; otherwise this keeps your original logic:
-            $categorySales[$categoryName] = ($categorySales[$categoryName] ?? 0) + $sale->total_amount;
+            $categorySales[$categoryName] = ($categorySales[$categoryName] ?? 0) + (float) $item->total_price;
         }
     }
 
-    // Payment method totals (filtered)
-    $paymentMethodTotals = $sales->groupBy('payment_method')->map(fn($g) => $g->sum('total_amount'))->toArray();
+    // Payment totals (gross)
+    $paymentMethodTotals = $sales->groupBy('payment_method')->map(
+        fn($g) => (float) $g->sum('total_amount')
+    )->toArray();
 
-    // Employee sales summary (filtered) — respecting discounts as in your code
+    // Employee sales (NET)
     $employeeSalesSummary = [];
     foreach ($sales as $sale) {
         if (!$sale->employee) continue;
         $name = $sale->employee->name;
-
         $employeeSalesSummary[$name] ??= [
-            'Employee Name'       => $name,
-            'Total Sales Amount'  => 0,
+            'Employee Name' => $name,
+            'Total Sales Amount' => 0,
         ];
-
-        $netAmount = ($sale->total_amount ?? 0) - ($sale->discount ?? 0) - ($sale->custom_discount ?? 0);
-        $employeeSalesSummary[$name]['Total Sales Amount'] += $netAmount;
+        $gross       = (float) ($sale->total_amount ?? 0);
+        $prodDisc    = (float) ($sale->discount ?? 0);
+        $customDisc  = $customDiscountToLkr($sale);
+        $employeeSalesSummary[$name]['Total Sales Amount'] += ($gross - $prodDisc - $customDisc);
     }
 
-    // Overall stats (filtered)
-    $totalSaleAmount         = $sales->sum('total_amount');
-    $totalCost               = $sales->sum('total_cost');
-    $totalDiscount           = $sales->sum('discount');
-    $customeDiscount         = $sales->sum('custom_discount');
-    $netProfit               = $totalSaleAmount - $totalCost - $totalDiscount - $customeDiscount;
+    // Overall stats
+    $totalSaleAmount         = (float) $sales->sum('total_amount');
+    $totalCost               = (float) $sales->sum('total_cost');
+    $totalProductDiscountLkr = (float) $sales->sum('discount');
+    $totalCustomDiscountLkr  = (float) $sales->reduce(fn($c, $s) => $c + $customDiscountToLkr($s), 0.0);
+    $netProfit               = $totalSaleAmount - $totalCost - ($totalProductDiscountLkr + $totalCustomDiscountLkr);
     $totalTransactions       = $sales->count();
-    $averageTransactionValue = $totalTransactions > 0 ? $totalSaleAmount / $totalTransactions : 0;
+    $averageTransactionValue = $totalTransactions > 0 ? ($totalSaleAmount / $totalTransactions) : 0;
 
-    // Unique customers in the filtered set
+    // Distinct customers (same filter)
     $totalCustomer = (clone $salesQuery)->distinct('customer_id')->count('customer_id');
 
-    return Inertia::render('Reports/Index', [
-        'products'                => $products,
-        'sales'                   => $sales,
-        'totalSaleAmount'         => $totalSaleAmount,
-        'totalCustomer'           => $totalCustomer,
-        'netProfit'               => $netProfit,
-        'totalDiscount'           => $totalDiscount,
-        'customeDiscount'         => $customeDiscount,
-        'totalTransactions'       => $totalTransactions,
-        'averageTransactionValue' => round($averageTransactionValue, 2),
-        'startDate'               => $startInput, // echo back what user chose
-        'endDate'                 => $endInput,
-        'categorySales'           => $categorySales,
-        'employeeSalesSummary'    => $employeeSalesSummary,
-        // If you also want to surface payment method totals to the UI:
-        // 'paymentMethodTotals'      => $paymentMethodTotals,
+    
+
+    
+  
+
+    return Inertia::render('Reports/KotReport', [
+        'products'                  => $products,
+        'sales'                     => $sales,
+
+        'totalSaleAmount'           => round($totalSaleAmount, 2),
+        'totalDiscountLkr'          => round($totalProductDiscountLkr, 2),
+        'totalCustomDiscountLkr'    => round($totalCustomDiscountLkr, 2),
+        'netProfit'                 => round($netProfit, 2),
+        'totalTransactions'         => $totalTransactions,
+        'averageTransactionValue'   => round($averageTransactionValue, 2),
+        'totalCustomer'             => $totalCustomer,
+
+        'startDate'                 => $startDateRaw,
+        'endDate'                   => $endDateRaw,
+        'ownersList'                   => $ownersList,
+
+        'categorySales'             => $categorySales,
+        'employeeSalesSummary'      => $employeeSalesSummary,
+        'paymentMethodTotals'       => $paymentMethodTotals,
+  
     ]);
 }
 
 
+
+
+
+
+
+
+
+ 
 
 
 

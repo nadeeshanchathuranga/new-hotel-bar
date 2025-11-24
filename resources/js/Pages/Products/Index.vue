@@ -244,31 +244,51 @@
               />
             </div>
             <div class="px-2 py-4 space-y-4">
+
+
+
+
+              <div class="flex justify-center space-x-2 items-start w-full">
+                <div class="flex space-x-1 text-white">
+                
+ <p class="text-justify text-lg">{{ product.name || "N/A" }}</p>
+                </div>
+ 
+              </div>
+
+
+
+
+
+
+
               <div
                 class="flex items-start space-x-3 justify-between text-[11px] font-bold tracking-wide"
               >
-                <p class="text-justify">{{ product.name || "N/A" }}</p>
+                
                 <p
                   class="px-3 text-white bg-green-700 py-2 rounded-full flex items-center"
                 >
                   {{ product.selling_price || "N/A" }}
+
+
+                 
+                </p>
+
+
+                <p
+                  class="px-3 text-white bg-yellow-700 py-2 rounded-full flex items-center"
+                >
+                  Doller Price :
+
+                $  {{ product.doller_price || "N/A" }}
                 </p>
               </div>
 
-              <div class="flex justify-center space-x-2 items-start w-full">
-                <div class="flex space-x-1 text-gray-400">
-                  <p class="font-bold">Base:</p>
 
-                  <p>{{ product.color?.name || "N/A" }}</p>
-                </div>
 
-                <div class="flex space-x-1 text-gray-400">
-                  <p class="font-bold">Size:</p>
-                  <p>
-                    {{ product.size?.name || "N/A" }}
-                  </p>
-                </div>
-              </div>
+
+
 
               <!-- <div class="flex items-center justify-center w-full space-x-4">
                 <p
