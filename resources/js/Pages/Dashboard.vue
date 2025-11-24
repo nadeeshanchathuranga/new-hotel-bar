@@ -49,7 +49,7 @@
         </div>
       </Link>
 
-      <Link href="/products" v-if="HasRole(['Admin', 'Manager'])">
+      <Link href="/products" v-if="HasRole(['Admin', 'Owner'])">
         <div class="dashboard-card bg-[#C62E2E]">
           <div class="card-content">
             <div class="icon-container">
@@ -112,7 +112,7 @@
         </div>
       </Link>
 
-      <Link href="/reports" v-if="HasRole(['Admin'])">
+      <Link href="/reports" v-if="HasRole(['Admin', 'Owner'])">
         <div class="dashboard-card bg-[#FF8000]">
           <div class="card-content">
             <div class="icon-container">
@@ -132,6 +132,33 @@
           </div>
         </div>
       </Link>
+
+
+
+
+
+ <Link href="/kot_reports" v-if="HasRole(['Admin', 'Owner','Manager','Cashier'])">
+        <div class="dashboard-card bg-[#8e8e8e]">
+          <div class="card-content">
+            <div class="icon-container">
+              <img
+                src="/images/dashboard/report.png"
+                class="icon"
+                alt="dresshub.lk"
+              />
+            </div>
+            <div class="text-container">
+              <p class="title">KOT Reports</p>
+              <p class="description">
+                Generate insights on sales, inventory, and performance to aid
+                decision-making.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Link>
+
+
 
       <Link href="/colors" v-if="HasRole(['Admin', 'Manager'])">
         <div class="dashboard-card bg-[#494949]">
@@ -261,7 +288,7 @@
         </div>
       </Link>
 
-      <Link href="/transactionHistory" v-if="HasRole(['Admin'])">
+      <Link href="/transactionHistory" v-if="HasRole(['Admin','Owner'])">
         <div class="dashboard-card bg-[#FFBF00]">
           <div class="card-content">
             <div class="icon-container">

@@ -20,17 +20,15 @@ class Owner extends Model
     // }
 
   public function thisMonthItem()
-    {
-        return $this->hasOne(OwnerItem::class)
-            ->whereDate('month', now()->startOfMonth());
-    }
+{
+    $month = now('Asia/Colombo')->format('Y-m');
+    return $this->hasOne(OwnerItem::class, 'owner_id')->where('month', $month);
+}
 
-    public function latestItem()
-    {
-        return $this->hasOne(OwnerItem::class)
-            ->latest('month')
-            ->latest('created_at');
-    }
+public function latestItem()
+{
+    return $this->hasOne(OwnerItem::class, 'owner_id')->latest('month');
+}
 
 
 }

@@ -83,6 +83,7 @@ Route::middleware([
     Route::post('/pos/submit', [PosController::class, 'submit'])->name('pos.checkout');
     Route::resource('payment', PaymentController::class);
     Route::resource('reports', ReportController::class);
+    Route::get('/kot_reports', [ReportController::class, 'kotIndex'])->name('reports.kot_index');
     Route::resource('customers', CustomerController::class);
     Route::resource('colors', ColorController::class);
     Route::resource('coupons', CouponController::class);
@@ -99,6 +100,12 @@ Route::get('/test-owners', function () {
     Route::resource('employees', EmployeeController::class);
     Route::resource('stock-transition', StockTransactionController::class);
     Route::resource('transactionHistory', TransactionHistoryController::class );
+Route::post('/transactions/wrong-bill', [TransactionHistoryController::class, 'updateWrongBill'])
+    ->name('transactions.updateWrongBill');
+
+
+
+
     Route::post('/transactions/delete', [TransactionHistoryController::class, 'destroy'])->name('transactions.delete');
     Route::post('/transactions/bulk-delete', [TransactionHistoryController::class, 'bulkDelete']) ->name('transactions.bulkDelete');
     Route::resource('delivery', DeliveryController::class);

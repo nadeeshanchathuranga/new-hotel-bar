@@ -75,7 +75,7 @@
             <thead>
               <tr class="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-[12px] text-white border-b border-blue-700">
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">#</th>
-                <th class="p-4"><input type="checkbox" @change="toggleAll" :checked="areAllSelected" /></th>
+            
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Order ID</th>
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Total Amount</th>
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Discount</th>
@@ -87,6 +87,7 @@
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Print</th>
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">View</th>
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">KOT</th>
+                <th class="p-4 font-semibold tracking-wide text-left uppercase">Check Bill</th>
               </tr>
             </thead>
 
@@ -97,9 +98,7 @@
                 class="transition duration-200 ease-in-out hover:bg-gray-200 hover:shadow-lg"
               >
                 <td class="px-6 py-3">{{ index + 1 }}</td>
-                <td class="p-4">
-                  <input type="checkbox" v-model="selectedOrders" :value="history.order_id" />
-                </td>
+                 
 
                 <td class="p-4 font-bold border-gray-200">
                   {{ history.order_id || 'N/A' }}
@@ -142,6 +141,18 @@
                 <td class="p-4 font-bold border-gray-200">
                   <button @click="printKOTReceipt(history)" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">KOT</button>
                 </td>
+
+                <td>
+ <span
+  class="px-4 py-2 rounded   text-lg font-bold"
+  :class="history.wrong_bill ? 'text-500' : 'text-500'"
+>
+  {{ history.wrong_bill ? 'Wrong Bill' : 'Correct' }}
+</span>
+
+
+</td>
+
               </tr>
             </tbody>
           </table>
@@ -317,15 +328,35 @@
       </div>
 
       <!-- Footer Section -->
-      <div class="flex justify-end mt-6">
-        <button
-          @click="closeModal"
-          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition focus:outline-none focus:ring focus:ring-blue-300"
-        >
-          Close
-        </button>
-      </div>
+    <div class="flex justify-end items-center gap-4 mt-6">
+ <button
+  @click="markWrongBill(selectedTransaction.id)"
+  :class="[
+    selectedTransaction?.wrong_bill
+      ? 'bg-green-600 hover:bg-green-700 focus:ring-green-300'
+      : 'bg-red-600 hover:bg-red-700 focus:ring-red-300',
+    'px-6 py-2 text-white rounded-lg transition focus:outline-none focus:ring'
+  ]"
+>
+  {{ selectedTransaction?.wrong_bill ? 'Mark as Correct Bill' : 'Mark as Wrong Bill' }}
+</button>
+
+
+  <button
+    @click="closeModal"
+    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition
+           focus:outline-none focus:ring focus:ring-blue-300"
+  >
+    Close
+  </button>
+</div>
+
+
+      
     </div>
+
+
+    
   </div>
 </template>
 
@@ -682,6 +713,38 @@ const deleteSelected = () => {
     })
   }
 }
+
+
+
+
+
+const markWrongBill = (saleId) => {
+  if (!saleId) return
+
+  if (!confirm('Are you sure you want to mark this bill as wrong?')) return
+
+  router.post(route('transactions.updateWrongBill'), {
+    order_id: selectedTransaction.value.order_id,
+    wrong_bill: selectedTransaction.value.wrong_bill ? 0 : 1,
+  }, {
+    onSuccess: () => {
+      selectedTransaction.value.wrong_bill = selectedTransaction.value.wrong_bill ? 0 : 1
+      alert(
+        selectedTransaction.value.wrong_bill
+          ? 'Marked as wrong bill!'
+          : 'Marked as correct bill!'
+      )
+      closeModal()
+    },
+    onError: (err) => alert('Failed to update: ' + (err?.message || 'Unknown error')),
+  })
+}
+
+
+
+
+
+
 </script>
 
 <style>

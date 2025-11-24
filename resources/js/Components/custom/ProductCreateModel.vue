@@ -46,7 +46,7 @@
               <!-- Modal Form -->
               <div class="mt-6 space-y-4 text-left">
                 <!-- Category Name -->
-                
+
 
 
 
@@ -282,6 +282,31 @@
                       {{ form.errors.stock_quantity }}
                     </span>
                   </div>
+
+
+
+
+                   <div class="w-full">
+                    <label
+                      for="doller_price"
+                      class="block text-sm font-medium text-gray-300"
+                      >Doller Price ($) :</label
+                    >
+                    <input
+                      type="number"
+                      id="doller_price"
+                      v-model="form.doller_price"
+                      class="w-full px-4 py-2 mt-2 text-black bg-white rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+                      placeholder="Enter Doller Price"
+                      
+                    />
+                    <span
+                      v-if="form.errors.doller_price"
+                      class="mt-2 text-red-500"
+                    >
+                      {{ form.errors.doller_price }}
+                    </span>
+                  </div>
                 </div>
 
                 <div class="flex items-center gap-8 mt-6">
@@ -475,6 +500,7 @@ const form = useForm({
   discount: 0,
   discounted_price: null,
   selling_price: null,
+  doller_price: null,
   stock_quantity: null,
   barcode: "",
   image: null, // For file upload

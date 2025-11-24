@@ -123,6 +123,37 @@
 
     <!-- Cost, Selling, Discount -->
     <div class="flex items-center gap-8 mt-6">
+
+
+
+
+<div class="w-full">
+       <label
+                      for="doller_price"
+                      class="block text-sm font-medium text-gray-300"
+                      >Doller Price ($) :</label
+                    >
+        <input
+          type="number"
+          step="0.01"
+          v-model="form.doller_price"
+          id="doller_price"
+          placeholder="Enter Doller Price"
+          class="w-full px-4 py-2 mt-2 text-black rounded-md focus:outline-none focus:ring focus:ring-blue-600"
+          
+        />
+        <span v-if="form.errors.doller_price" class="mt-2 text-red-500">
+          {{ form.errors.doller_price }}
+        </span>
+      </div>
+
+
+
+
+
+
+
+
       <div class="w-full">
         <label class="block text-sm font-medium text-gray-300">Cost Price:</label>
         <input
@@ -364,6 +395,7 @@ const form = useForm({
   discount: 0,
   discounted_price: null,
   selling_price: null,
+  doller_price: null,
   stock_quantity: null,
   barcode: "",
   image: null, // For file upload
@@ -447,6 +479,7 @@ watch(
       form.cost_price = newValue.cost_price || null;
       form.discount = newValue.discount || 0;
       form.selling_price = newValue.selling_price || null;
+      form.doller_price = newValue.doller_price || null;
       form.discounted_price = newValue.discounted_price || null;
       form.barcode = newValue.barcode || "";
       form.image = newValue.image;
