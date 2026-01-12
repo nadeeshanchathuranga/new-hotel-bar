@@ -33,6 +33,8 @@ class Sale extends Model
         'owner_discount_value',
         'isConvertPrice',
         'wrong_bill',
+          'order_source',
+    'commission_amount',
     ];
 
 

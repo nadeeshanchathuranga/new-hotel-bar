@@ -119,6 +119,22 @@
               </span>
             </p>
           </div>
+          <div class="py-2 px-4 border-2 border-purple-600 rounded-xl bg-purple-100 shadow-sm text-center">
+            <p class="text-sm font-extrabold text-black uppercase">
+              PickMe Commission:
+              <span class="text-base font-bold">
+                {{ pickmeCommissionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} LKR
+              </span>
+            </p>
+          </div>
+          <div class="py-2 px-4 border-2 border-indigo-600 rounded-xl bg-indigo-100 shadow-sm text-center">
+            <p class="text-sm font-extrabold text-black uppercase">
+              Uber Commission:
+              <span class="text-base font-bold">
+                {{ uberCommissionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} LKR
+              </span>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -137,6 +153,8 @@
             <col style="width:140px" />
             <col style="width:160px" />
             <col style="width:140px" />
+            <col style="width:140px" />
+            <col style="width:140px" />
           </colgroup>
 
           <thead class="sticky top-0 z-10">
@@ -152,6 +170,8 @@
               <th class="p-3 num font-semibold">Customer Discounts</th>
               <th class="p-3 num font-semibold">Owner</th>
               <th class="p-3 num font-semibold">Owner Discount</th>
+              <th class="p-3 num font-semibold">Order Source</th>
+              <th class="p-3 num font-semibold">Commission</th>
               <th class="p-3 num font-semibold">Profit</th>
               <th class="p-3 num font-semibold">Wrong</th>
             </tr>
@@ -170,6 +190,12 @@
               <td class="p-3 num text-center">{{ toMoney(customerDiscountAmount(s)) }}</td>
               <td class="p-3 text-right">{{ (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? '—') : '—' }}</td>
               <td class="p-3 num text-center">{{ (s.owner_discount_value && s.owner_discount_value != 0) ? toMoney(s.owner_discount_value) : '—' }}</td>
+              <td class="p-3 text-center">
+                <span v-if="s.order_source === 0 || s.order_source === '0'">Pick Me</span>
+                <span v-else-if="s.order_source === 1 || s.order_source === '1'">Uber</span>
+                <span v-else>—</span>
+              </td>
+              <td class="p-3 num text-center">{{ toMoney(s.commission_amount || 0) }}</td>
               <td class="p-3 num text-center">
                 {{ (Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0)).toFixed(2) }}
               </td>
@@ -199,6 +225,8 @@
               <td class="p-3 num text-center">{{ salesCustomerDiscountTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
               <td class="p-3 num text-center">—</td>
               <td class="p-3 num text-center">{{ salesOwnerDiscountTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+              <td class="p-3 num text-center">—</td>
+              <td class="p-3 num text-center">{{ salesCommissionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
               <td class="p-3 num text-center">{{ salesProfitTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
             </tr>
           </tfoot>
@@ -518,6 +546,31 @@ const finalSalesAmount = computed(() =>
   Math.max(0, salesWithServiceTotal.value - salesCustomerDiscountTotal.value - salesOwnerDiscountTotal.value)
 );
 
+// Commission totals (overall and by source)
+const salesCommissionTotal = computed(() =>
+  (sales.value || []).reduce((sum, s) => sum + Number(s.commission_amount || 0), 0)
+);
+
+const pickmeCommissionTotal = computed(() =>
+  (sales.value || []).reduce((sum, s) => {
+    const src = s.order_source;
+    if (src === 0 || src === "0") {
+      return sum + Number(s.commission_amount || 0);
+    }
+    return sum;
+  }, 0)
+);
+
+const uberCommissionTotal = computed(() =>
+  (sales.value || []).reduce((sum, s) => {
+    const src = s.order_source;
+    if (src === 1 || src === "1") {
+      return sum + Number(s.commission_amount || 0);
+    }
+    return sum;
+  }, 0)
+);
+
 // Note: mirrors the table's Profit column: (total_amount - total_cost)
 const salesProfitTotal = computed(() =>
   (sales.value || []).reduce(
@@ -675,7 +728,7 @@ const downloadSalesTableExcel = () => {
   const header = [
     "#","Date","Order Number","Customer","Dish Qty",
     "Total Price","Service Charge (%)","Price with Service",
-    "Customer Discounts","Owner","Owner Discount","Profit"
+    "Customer Discounts","Owner","Owner Discount","Order Source","Commission Amount","Profit"
   ];
 
   const rows = (sales.value || []).map((s, i) => {
@@ -686,6 +739,12 @@ const downloadSalesTableExcel = () => {
     const custDisc = customerDiscountAmount(s);
     const owner = (s.owner_discount_value && s.owner_discount_value != 0) ? (s.owner?.name ?? "—") : "—";
     const ownerDisc = Number(s.owner_discount_value || 0);
+    const orderSourceLabel = (s.order_source === 0 || s.order_source === "0")
+      ? "Pick Me"
+      : (s.order_source === 1 || s.order_source === "1")
+      ? "Uber"
+      : "—";
+    const commission = Number(s.commission_amount || 0);
     const profit = Number(s.total_amount ?? 0) - Number(s.total_cost ?? 0);
 
     return [
@@ -700,6 +759,8 @@ const downloadSalesTableExcel = () => {
       custDisc,
       owner,
       ownerDisc,
+      orderSourceLabel,
+      commission,
       profit,
     ];
   });
@@ -720,7 +781,7 @@ const downloadSalesTableExcel = () => {
   // Formats
   const formatCols = {
     qty: 4,
-    money: [5, 7, 8, 10, 11],
+    money: [5, 7, 8, 10, 12, 13],
     percent: 6,
   };
   const range = XLSX.utils.decode_range(ws['!ref']);

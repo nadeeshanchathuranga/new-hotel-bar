@@ -95,7 +95,7 @@ const props = defineProps({
   subTotal: String,
   totalDiscount: String,
   total: String,
-    custom_discount: Number,
+  custom_discount: Number,
   custom_discount_type: String,
   kitchen_note: String,
   delivery_charge: String,
@@ -103,6 +103,9 @@ const props = defineProps({
   service_charge: String,
   order_type: String,
   selectedPaymentMethod: String,
+
+  commission_amount: { type: [Number, String], default: 0 },
+  order_source: { type: [Number, String], default: null },
 
 
   owner_discount_value: { type: Number, default: 0 },
@@ -155,11 +158,11 @@ const handlePrintReceipt = () => {
     })
     .join("");
     const totalDiscountValue =
-    Number(props.totalDiscount || 0) + Number(props.custom_discount || 0);  
+    Number(props.totalDiscount || 0) + Number(props.custom_discount || 0);
 const maybeSubTotal = Number(props.subTotal || 0)
   ? `<div><span>Sub Total</span><span>${fmt(props.subTotal)} ${C.value}</span></div>`
   : "";
-  
+
   const maybeOwner = Number(props.owner_discount_value) !== 0
     ? `<div><span>Owner Discount ${props.owner_code ? `(${props.owner_code})` : ""}</span><span>(${fmt(props.owner_discount_value)}) ${C.value}</span></div>`
     : "";
@@ -176,6 +179,10 @@ const maybeSubTotal = Number(props.subTotal || 0)
 
   const maybeBank = props.bank_service_charge
     ? `<div><span>Bank Service Charge</span><span>${fmt(props.bank_service_charge)} %</span></div>`
+    : "";
+
+  const maybeCommission = Number(props.commission_amount || 0)
+    ? `<div><span>Commission</span><span>(${fmt(props.commission_amount)}) ${C.value}</span></div>`
     : "";
 
   const maybeTotal = Number(props.total) !== 0
@@ -199,7 +206,7 @@ const maybeSubTotal = Number(props.subTotal || 0)
           align-items:center;
           margin:8px 0;
           padding:10px 5px;
-          border:1px solid #000;    
+          border:1px solid #000;
           font-size:12px;
           border-radius:0px;
           font-weight:700;
@@ -219,6 +226,17 @@ const maybeSubTotal = Number(props.subTotal || 0)
       : props.order_type === "pickup"
       ? "Delivery"
       : "Dine In";
+
+  const orderSourceLabel =
+    props.order_source === 0 || props.order_source === "0"
+      ? "Pick Me"
+      : props.order_source === 1 || props.order_source === "1"
+      ? "Uber"
+      : "";
+
+  const maybeOrderSource = orderSourceLabel
+    ? `<div class="info-row"><div><p>Order Source:</p><small>${orderSourceLabel}</small></div><div></div></div>`
+    : "";
 
   const receiptHTML = `
   <!doctype html>
@@ -277,6 +295,7 @@ const maybeSubTotal = Number(props.subTotal || 0)
           <div><p>Payment Type:</p><small>${props.selectedPaymentMethod}</small></div>
           <div><p>Currency:</p><small>${C.value}</small></div>
         </div>
+        ${maybeOrderSource}
         <div class="badge"><small>Order Type: ${orderType}</small></div>
       </div>
 
@@ -301,10 +320,11 @@ const maybeSubTotal = Number(props.subTotal || 0)
   ${maybeDelivery}
   ${maybeService}
   ${maybeBank}
+  ${maybeCommission}
   ${maybeTotal}
   ${maybeCash}
   ${maybeBalance}
-  ${maybeCustDisc}  
+  ${maybeCustDisc}
       </div>
 
       ${

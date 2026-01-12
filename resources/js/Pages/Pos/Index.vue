@@ -7,7 +7,7 @@
     <Header />
 
     <div class="w-5/6 py-12 space-y-16">
-      
+
 
 
 
@@ -345,8 +345,36 @@
                 </div>
               </div>
 
+              <!-- Aggregator / Platform Commission Block -->
+              <div
+                class="w-full px-8 pt-4 pb-4 mt-2 border-b border-gray-200 rounded-2xl bg-gray-50 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                  <p class="text-base font-semibold text-gray-700">Order Source</p>
+                  <select v-model="selectedTable.order_source"
+                    class="min-w-[150px] px-3 py-2 rounded-lg text-base text-gray-900 bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select source</option>
+                    <option value="0">Pick Me</option>
+                    <option value="1">Uber</option>
+                  </select>
+                </div>
 
+                <div class="flex items-center justify-between">
+                  <p class="text-base font-semibold text-gray-700">Commission (%)</p>
+                  <div class="flex items-center gap-2">
+                    <input v-model.number="selectedTable.commission_percent" type="number" min="0" max="100"
+                      step="0.01" placeholder="0.00"
+                      class="w-24 rounded-lg px-3 py-1.5 text-right text-base text-gray-900 bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <span class="text-sm text-gray-500">%</span>
+                  </div>
+                </div>
 
+                <div class="flex items-center justify-between">
+                  <p class="text-base font-semibold text-gray-700">Commission Amount</p>
+                  <p class="text-base font-bold text-gray-900">
+                    {{ commissionAmount }} {{ isConvertPrice ? 'USD' : 'LKR' }}
+                  </p>
+                </div>
+              </div>
 
 
               <div class="flex items-center justify-between w-full px-16 pt-4">
@@ -574,8 +602,8 @@
     !selectedTable || selectedTable.products.length === 0 ? '' : 'group-hover:scale-110'
   ]"></i>
   <span>Print Bill</span>
-  
-   
+
+
 </button>
 
 
@@ -604,7 +632,7 @@
 
 
 
-              
+
 
               <div class="flex items-center justify-center w-full">
                 <button @click="submitOrder" type="button"
@@ -631,6 +659,7 @@
     :bank_service_charge="selectedTable.bank_service_charge" :selectedTable="selectedTable"
     :kitchen_note="selectedTable.kitchen_note" :selectedPaymentMethod="selectedPaymentMethod"
     :order_type="selectedTable.order_type" :owner_discount_value="ownerDiscountValue" :owner_code="ownerCodeValue"
+    :commission_amount="commissionAmount" :order_source="selectedTable.order_source"
     :is-convert-price="isConvertPrice" />
 
   <AlertModel v-model:open="isAlertModalOpen" :message="message" />
@@ -767,6 +796,8 @@ const savedTables = JSON.parse(localStorage.getItem("tables")) || [
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
+    order_source: "",
+    commission_percent: 0,
     lastKotSnapshot: null,
   },
 ];
@@ -795,6 +826,8 @@ const seedFixedTables = () => {
       delivery_charge: "",
       service_charge: "",
       bank_service_charge: "",
+      order_source: "",
+      commission_percent: 0,
       lastKotSnapshot: null,
     };
   } else if (!('lastKotSnapshot' in def)) {
@@ -812,6 +845,8 @@ const seedFixedTables = () => {
       if (!('kotStatus' in t)) t.kotStatus = "pending";
       if (!('lastKotSnapshot' in t)) t.lastKotSnapshot = null;
       if (!('custom_discount' in t)) t.custom_discount = 0.0;
+      if (!('order_source' in t)) t.order_source = "";
+      if (!('commission_percent' in t)) t.commission_percent = 0;
       stable.push(t);
     } else {
       stable.push({
@@ -828,6 +863,8 @@ const seedFixedTables = () => {
         delivery_charge: "",
         service_charge: "",
         bank_service_charge: "",
+        order_source: "",
+        commission_percent: 0,
         kotStatus: "pending",
         lastKotSnapshot: null,
       });
@@ -954,6 +991,8 @@ const refreshData = async () => {
       service_charge: "",
       bank_service_charge: "",
       owner_discount_value: "",
+      order_source: "",
+      commission_percent: 0,
       lastKotSnapshot: null,
     };
 
@@ -1066,6 +1105,8 @@ const removeSelectedTable = () => {
     delivery_charge: "",
     service_charge: "",
     bank_service_charge: "",
+    order_source: "",
+    commission_percent: 0,
     lastKotSnapshot: null,
   };
   tables.value[idx] = cleared;
@@ -1088,6 +1129,33 @@ const orderId = computed(() => {
   return Array.from({ length: 6 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join("");
 });
 
+// Common payload used for saving orders (confirm & print)
+const buildOrderPayload = () => ({
+  customer: customer.value,
+  products: selectedTable.value.products,
+  employee_id: employee_id.value,
+  paymentMethod: selectedPaymentMethod.value,
+  userId: props.loggedInUser.id,
+  orderId: selectedTable.value.orderId,
+  custom_discount: selectedTable.value.custom_discount,
+  custom_discount_type: selectedTable.value.custom_discount_type,
+  cash: selectedTable.value.cash,
+  bank_name: selectedTable.value.bank_name,
+  card_last4: selectedTable.value.card_last4,
+  kitchen_note: selectedTable.value.kitchen_note,
+  delivery_charge: selectedTable.value.delivery_charge,
+  service_charge: selectedTable.value.service_charge,
+  bank_service_charge: selectedTable.value.bank_service_charge,
+  order_type: selectedTable.value.order_type,
+  order_source: selectedTable.value.order_source || null,
+  commission_amount: commissionAmount.value,
+  total: total.value,
+  owner_id: ownerForm.owner_id || null,
+  owner_discount_value: ownerDiscountValue.value,
+  owner_override_amount: ownerFetch.value.override_amount || 0,
+  isConvertPrice: isConvertPrice.value,
+});
+
 const submitOrder = async () => {
   if (!total.value || parseFloat(total.value) <= 0) {
     isAlertModalOpen.value = true; message.value = "Total amount cannot be zero or less. Please check the bill."; return;
@@ -1095,30 +1163,7 @@ const submitOrder = async () => {
   if (balance.value < 0) { isAlertModalOpen.value = true; message.value = "Cash is not enough"; return; }
 
   try {
-    await axios.post("/pos/submit", {
-      customer: customer.value,
-      products: selectedTable.value.products,
-      employee_id: employee_id.value,
-      paymentMethod: selectedPaymentMethod.value,
-      userId: props.loggedInUser.id,
-      orderId: selectedTable.value.orderId,
-      custom_discount: selectedTable.value.custom_discount,
-      custom_discount_type: selectedTable.value.custom_discount_type,
-      // now a computed amount
-      cash: selectedTable.value.cash,
-      bank_name: selectedTable.value.bank_name,
-      card_last4: selectedTable.value.card_last4,
-      kitchen_note: selectedTable.value.kitchen_note,
-      delivery_charge: selectedTable.value.delivery_charge,
-      service_charge: selectedTable.value.service_charge,
-      bank_service_charge: selectedTable.value.bank_service_charge,
-      order_type: selectedTable.value.order_type,
-      total: total.value,
-      owner_id: ownerForm.owner_id || null,
-      owner_discount_value: ownerDiscountValue.value,
-      owner_override_amount: ownerFetch.value.override_amount || 0,
-      isConvertPrice: isConvertPrice.value,
-    });
+    await axios.post("/pos/submit", buildOrderPayload());
 
     isSuccessModalOpen.value = true;
     selectedTable.value.orderId = generateOrderId();
@@ -1170,11 +1215,12 @@ const customDiscCalculated = computed(() => {
 });
 
 
-const total = computed(() => {
+// Base total (without platform commission)
+const baseTotal = computed(() => {
   const subtotalValue = parseFloat(subtotal.value) || 0;
   const discountValue = parseFloat(totalDiscount.value) || 0;
 
-  // NEW: custom discount as computed amount (handles Rs or %)
+  // custom discount as computed amount (handles Rs or %)
   const customValue = parseFloat(customDiscCalculated.value) || 0;
 
   // delivery (only for pickup)
@@ -1194,6 +1240,23 @@ const total = computed(() => {
   const bankServiceChargeAmount = (preBankTotal * bankServiceChargeRate) / 100;
 
   return (preBankTotal + bankServiceChargeAmount).toFixed(2);
+});
+
+// Commission amount calculated from base total and commission_percent
+const commissionAmount = computed(() => {
+  const t = selectedTable.value;
+  if (!t) return "0.00";
+  const base = parseFloat(baseTotal.value) || 0;
+  const percent = Number(t.commission_percent) || 0;
+  if (percent <= 0 || base <= 0) return "0.00";
+  return ((base * percent) / 100).toFixed(2);
+});
+
+// Final total after deducting commission
+const total = computed(() => {
+  const base = parseFloat(baseTotal.value) || 0;
+  const commission = parseFloat(commissionAmount.value) || 0;
+  return (base - commission).toFixed(2);
 });
 
 
@@ -1480,7 +1543,7 @@ const searchCustomer = async () => {
   }
 };
 
-const printBill = () => {
+const printBill = async () => {
   const table = selectedTable.value;
   if (!table || !Array.isArray(table.products) || table.products.length === 0) {
     isAlertModalOpen.value = true;
@@ -1576,7 +1639,7 @@ const printBill = () => {
         align-items:center;
         margin:8px 0;
         padding:10px 5px;
-        border:1px solid #000;    
+        border:1px solid #000;
         font-size:12px;
         border-radius:0px;
         font-weight:700;
@@ -1593,13 +1656,23 @@ const printBill = () => {
   const dateStr = now.toLocaleDateString();
   const timeStr = now.toLocaleTimeString();
 
+  // Save the bill before printing
+  try {
+    await axios.post("/pos/submit", buildOrderPayload());
+  } catch (e) {
+    console.error("Error saving before print:", e?.response?.data || e.message);
+    isAlertModalOpen.value = true;
+    message.value = "Failed to save bill before printing.";
+    return;
+  }
+
   // Get company info safely (adjust variable names based on your actual code)
   const companyName = typeof companyInfo !== 'undefined' && companyInfo?.value?.name ? companyInfo.value.name : "";
   const companyAddress = typeof companyInfo !== 'undefined' && companyInfo?.value?.address ? companyInfo.value.address : "";
   const companyPhone = typeof companyInfo !== 'undefined' && companyInfo?.value?.phone ? companyInfo.value.phone : "";
   const companyPhone2 = typeof companyInfo !== 'undefined' && companyInfo?.value?.phone2 ? companyInfo.value.phone2 : "";
   const companyEmail = typeof companyInfo !== 'undefined' && companyInfo?.value?.email ? companyInfo.value.email : "";
-  
+
   const cashierName = typeof cashier !== 'undefined' && cashier?.value?.name ? cashier.value.name : "";
   const paymentMethod = typeof selectedPaymentMethod !== 'undefined' ? (selectedPaymentMethod?.value || "") : "";
 
@@ -1656,7 +1729,7 @@ const printBill = () => {
         <div><p>Table:</p><small>${table.id === "default" ? "Live Bill" : table.number - 1}</small></div>
         <div><p>Cashier:</p><small>${cashierName}</small></div>
       </div>
-       
+
       <div class="badge"><small>Order Type: ${orderType}</small></div>
     </div>
 

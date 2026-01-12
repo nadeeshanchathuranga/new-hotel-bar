@@ -75,7 +75,7 @@
             <thead>
               <tr class="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-[12px] text-white border-b border-blue-700">
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">#</th>
-            
+
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Order ID</th>
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Total Amount</th>
                 <th class="p-4 font-semibold tracking-wide text-left uppercase">Discount</th>
@@ -98,7 +98,7 @@
                 class="transition duration-200 ease-in-out hover:bg-gray-200 hover:shadow-lg"
               >
                 <td class="px-6 py-3">{{ index + 1 }}</td>
-                 
+
 
                 <td class="p-4 font-bold border-gray-200">
                   {{ history.order_id || 'N/A' }}
@@ -352,11 +352,11 @@
 </div>
 
 
-      
+
     </div>
 
 
-    
+
   </div>
 </template>
 
@@ -394,7 +394,7 @@ const lineTotal = (item) => asNumber(item.unit_price) * asNumber(item.quantity)
 const itemsSubtotal = (row) => (row?.sale_items ?? []).reduce((sum, it) => sum + lineTotal(it), 0)
 
 // Final net total per row with charges/discounts.
-// Includes: subtotal (or total_amount if you rely on backend), + delivery, - discounts, + bank/service % on subtotal.
+// Includes: subtotal (or total_amount), + delivery, - discounts, + bank/service % on subtotal, - commission.
 const rowNetTotal = (row) => {
   // prefer backend `total_amount` if it already equals items subtotal; fallback to computed
   const base = asNumber(row.total_amount) || itemsSubtotal(row)
@@ -403,7 +403,10 @@ const rowNetTotal = (row) => {
   const bankPct = asNumber(row.bank_service_charge)
   const svcPct = asNumber(row.service_charge)
   const pctAdd = (base * bankPct) / 100 + (base * svcPct) / 100
-  return afterDiscounts + pctAdd
+  const gross = afterDiscounts + pctAdd
+  const commission = asNumber(row.commission_amount)
+  const net = gross - commission
+  return net
 }
 
 // DataTables
@@ -449,6 +452,14 @@ const printReceipt = (history) => {
   const discountDisplay = formatLKR(asNumber(history.discount))
   const customDiscountDisplay = formatLKR(asNumber(history.custom_discount))
   const deliveryDisplay = formatLKR(asNumber(history.delivery_charge))
+  const commissionDisplay = formatLKR(asNumber(history.commission_amount))
+
+  const orderSourceLabel =
+    history.order_source === 0 || history.order_source === '0'
+      ? 'Pick Me'
+      : history.order_source === 1 || history.order_source === '1'
+      ? 'Uber'
+      : ''
 
   const receiptContent = `
   <!DOCTYPE html>
@@ -519,6 +530,9 @@ const printReceipt = (history) => {
             <small>${history.payment_method || ''}</small>
           </div>
         </div>
+        ${orderSourceLabel
+          ? `<div class="info-row"><div><p>Order Source:</p><small>${orderSourceLabel}</small></div><div></div></div>`
+          : ''}
       </div>
 
       <div class="section">
@@ -547,6 +561,11 @@ const printReceipt = (history) => {
         }
         ${asNumber(history.service_charge)
           ? `<div><span>Service Charge</span><span>+ ${formatLKR(itemsSubtotal(history) * asNumber(history.service_charge)/100)}</span></div>`
+          : ''
+        }
+
+        ${asNumber(history.commission_amount)
+          ? `<div><span>Commission</span><span>- ${commissionDisplay}</span></div>`
           : ''
         }
 

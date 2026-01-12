@@ -175,6 +175,8 @@ class PosController extends Controller
         'paymentMethod'               => ['required', 'in:cash,card'],
         'order_type'                  => ['nullable', 'in:takeaway,pickup'],
 
+        'order_source'                => ['nullable', 'integer'],
+
         'service_charge'              => ['nullable', 'numeric', 'min:0'],
         'delivery_charge'             => ['nullable', 'numeric', 'min:0'],
         'bank_service_charge'         => ['nullable', 'numeric', 'min:0'],
@@ -196,6 +198,9 @@ class PosController extends Controller
         'customer.contactNumber'      => ['nullable', 'string', 'max:25'],
         'customer.address'            => ['nullable', 'string', 'max:500'],
         'customer.bdate'              => ['nullable', 'date'],
+
+        'commission_amount'           => ['nullable', 'numeric', 'min:0'],
+        'total'                       => ['nullable', 'numeric', 'min:0'],
     ]);
 
     $products = $data['products'];
@@ -258,7 +263,18 @@ class PosController extends Controller
     $bankRate            = (float) ($data['bank_service_charge'] ?? 0);
     $bankServiceAmount   = round(($preBankTotal * $bankRate) / 100, 2);
 
-    $grandTotal          = round($preBankTotal + $bankServiceAmount, 2);
+    // ---- Commission (platform/aggregator)
+    $grossTotal          = round($preBankTotal + $bankServiceAmount, 2);
+    $commissionAmount    = (float) ($data['commission_amount'] ?? 0);
+    // Clamp commission to not exceed the gross total
+    if ($commissionAmount < 0) {
+        $commissionAmount = 0;
+    }
+    if ($commissionAmount > $grossTotal) {
+        $commissionAmount = $grossTotal;
+    }
+
+    $grandTotal          = $grossTotal - $commissionAmount;
 
     DB::beginTransaction();
 
@@ -303,6 +319,7 @@ class PosController extends Controller
             'order_id'             => $data['orderId'],
 
             'order_type'           => $orderType,
+            'order_source'         => $data['order_source'] ?? null,
             'bank_name'            => $data['bank_name'] ?? null,
             'card_last4'           => $data['card_last4'] ?? null,
 
@@ -313,6 +330,8 @@ class PosController extends Controller
             'delivery_charge'      => $deliveryCharge,
             'bank_service_charge'  => $bankRate,
             'bank_service_value'   => $bankServiceAmount,
+
+            'commission_amount'    => $commissionAmount,
 
             'total_cost'           => $totalCost,
             'grand_total'          => $grandTotal,
