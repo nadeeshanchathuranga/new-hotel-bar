@@ -755,6 +755,7 @@ const kitchen_note = ref("");
 const delivery_charge = ref("");
 const service_charge = ref("");
 const bank_service_charge = ref("");
+const isOrderSubmitted = ref(false);
 
 // bank list + filter
 const bankOptions = ref([
@@ -1006,6 +1007,7 @@ const refreshData = async () => {
     cash.value = 0;
     selectedPaymentMethod.value = "cash";
     employee_id.value = "";
+    isOrderSubmitted.value = false;
 
     localStorage.setItem("tables", JSON.stringify(tables.value));
     localStorage.setItem("selectedTable", JSON.stringify(selectedTable.value));
@@ -1120,6 +1122,7 @@ const handleModalOpenUpdate = (v) => {
     seedFixedTables();
     selectedTable.value = tables.value[0];
     cash.value = 0;
+    isOrderSubmitted.value = false;
     refreshData();
   }
 };
@@ -1162,9 +1165,16 @@ const submitOrder = async () => {
   }
   if (balance.value < 0) { isAlertModalOpen.value = true; message.value = "Cash is not enough"; return; }
 
+  // Prevent duplicate submission
+  if (isOrderSubmitted.value) {
+    isSuccessModalOpen.value = true;
+    return;
+  }
+
   try {
     await axios.post("/pos/submit", buildOrderPayload());
 
+    isOrderSubmitted.value = true;
     isSuccessModalOpen.value = true;
     selectedTable.value.orderId = generateOrderId();
     customer.value = { name: "", countryCode: "", contactNumber: "", email: "" };
@@ -1655,16 +1665,6 @@ const printBill = async () => {
   const now = new Date();
   const dateStr = now.toLocaleDateString();
   const timeStr = now.toLocaleTimeString();
-
-  // Save the bill before printing
-  try {
-    await axios.post("/pos/submit", buildOrderPayload());
-  } catch (e) {
-    console.error("Error saving before print:", e?.response?.data || e.message);
-    isAlertModalOpen.value = true;
-    message.value = "Failed to save bill before printing.";
-    return;
-  }
 
   // Get company info safely (adjust variable names based on your actual code)
   const companyName = typeof companyInfo !== 'undefined' && companyInfo?.value?.name ? companyInfo.value.name : "";
