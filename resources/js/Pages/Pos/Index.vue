@@ -636,9 +636,12 @@
 
               <div class="flex items-center justify-center w-full">
                 <button @click="submitOrder" type="button"
-                  :disabled="!selectedTable || selectedTable.products.length === 0" :class="[
+                  :disabled="!selectedTable || selectedTable.products.length === 0 || isOrderSubmitting"
+                  :class="[
                     'w-full bg-black py-4 text-2xl font-bold tracking-wider text-center text-white uppercase rounded-xl',
-                    !selectedTable || selectedTable.products.length === 0 ? 'cursor-not-allowed' : 'cursor-pointer',
+                    (!selectedTable || selectedTable.products.length === 0 || isOrderSubmitting)
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer',
                   ]">
                   <i class="pr-4 ri-add-circle-fill"></i> Confirm Order
                 </button>
@@ -756,6 +759,7 @@ const delivery_charge = ref("");
 const service_charge = ref("");
 const bank_service_charge = ref("");
 const isOrderSubmitted = ref(false);
+const isOrderSubmitting = ref(false);
 
 // bank list + filter
 const bankOptions = ref([
@@ -1118,6 +1122,7 @@ const removeSelectedTable = () => {
 const handleModalOpenUpdate = (v) => {
   isSuccessModalOpen.value = v;
   if (!v) {
+    isOrderSubmitting.value = false;
     removeSelectedTable();
     seedFixedTables();
     selectedTable.value = tables.value[0];
@@ -1160,6 +1165,7 @@ const buildOrderPayload = () => ({
 });
 
 const submitOrder = async () => {
+  if (isOrderSubmitting.value) return;
   if (!total.value || parseFloat(total.value) <= 0) {
     isAlertModalOpen.value = true; message.value = "Total amount cannot be zero or less. Please check the bill."; return;
   }
@@ -1172,6 +1178,7 @@ const submitOrder = async () => {
   }
 
   try {
+    isOrderSubmitting.value = true;
     await axios.post("/pos/submit", buildOrderPayload());
 
     isOrderSubmitted.value = true;
@@ -1181,6 +1188,8 @@ const submitOrder = async () => {
   } catch (error) {
     if (error.response?.status === 423) { isAlertModalOpen.value = true; message.value = error.response.data.message; }
     console.error("Error submitting:", error.response?.data || error.message);
+  } finally {
+    isOrderSubmitting.value = false;
   }
 };
 
