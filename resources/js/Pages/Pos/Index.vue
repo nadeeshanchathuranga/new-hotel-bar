@@ -228,8 +228,13 @@
                     <h3 class="text-lg font-semibold text-gray-900">
                       {{ item.name }}
                     </h3>
-                    <button @click="removeProduct(item.id)"
-                      class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-300 hover:bg-gray-400 transition-colors">
+                    <button @click="removeProduct(item.id)" :disabled="hasSentKotForTable(selectedTable)"
+                      :class="[
+                        'w-10 h-10 flex items-center justify-center rounded-full transition-colors',
+                        hasSentKotForTable(selectedTable)
+                          ? 'bg-gray-200 cursor-not-allowed opacity-60'
+                          : 'bg-gray-300 hover:bg-gray-400'
+                      ]">
                       <i class="ri-close-line text-xl text-red-600 font-semibold"></i>
                     </button>
                   </div>
@@ -241,8 +246,13 @@
                   <!-- Quantity Controls -->
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                      <button @click="decrementQuantity(item.id)"
-                        class="flex items-center justify-center w-8 h-8 text-white bg-gray-800 hover:bg-gray-900 rounded-full transition-colors">
+                      <button @click="decrementQuantity(item.id)" :disabled="hasSentKotForTable(selectedTable)"
+                        :class="[
+                          'flex items-center justify-center w-8 h-8 text-white rounded-full transition-colors',
+                          hasSentKotForTable(selectedTable)
+                            ? 'bg-gray-400 cursor-not-allowed opacity-70'
+                            : 'bg-gray-800 hover:bg-gray-900'
+                        ]">
                         <i class="ri-subtract-line"></i>
                       </button>
                       <span class="text-lg font-medium w-8 text-center">
@@ -1031,6 +1041,11 @@ const refreshData = async () => {
 
 const removeProduct = (id) => {
   if (!selectedTable.value) return;
+  if (hasSentKotForTable(selectedTable.value)) {
+    isAlertModalOpen.value = true;
+    message.value = "Items cannot be removed after KOT is sent.";
+    return;
+  }
   const initial = selectedTable.value.products.length;
   selectedTable.value.products = selectedTable.value.products.filter(item => item.id !== id);
   if (selectedTable.value.products.length === initial) console.warn(`Product ${id} not found`);
@@ -1043,6 +1058,11 @@ const incrementQuantity = (id) => {
 };
 const decrementQuantity = (id) => {
   if (!selectedTable.value) return;
+  if (hasSentKotForTable(selectedTable.value)) {
+    isAlertModalOpen.value = true;
+    message.value = "Item quantity cannot be reduced after KOT is sent.";
+    return;
+  }
   const p = selectedTable.value.products.find(item => item.id === id);
   if (p) { if (p.quantity > 1) p.quantity -= 1; }
 };
@@ -1463,6 +1483,11 @@ const hasKotChanges = (table) => {
     if (Number(curr[k]) !== Number(snap[k])) return true;
   }
   return false;
+};
+const hasSentKotForTable = (table) => {
+  if (!table || table.id === "default") return false;
+  if (!table.lastKotSnapshot || typeof table.lastKotSnapshot !== "object") return false;
+  return Object.keys(table.lastKotSnapshot).length > 0;
 };
 const isKOTDisabled = (table) => {
   if (!table || table.id === "default") return true;
