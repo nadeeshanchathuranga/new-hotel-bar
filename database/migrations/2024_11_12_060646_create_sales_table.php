@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('order_id')->nullable();
             $table->decimal('total_amount', 10, 2);
             $table->decimal('discount', 10, 2)->default(0);
-            $table->enum('payment_method', ['Cash', 'Card', 'Online']);
+            $table->enum('payment_method', ['Cash', 'Card', 'Online','pickme', 'uber'])->default('cash');
             $table->date('sale_date');
             $table->timestamps();
         });
