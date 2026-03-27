@@ -172,7 +172,7 @@ class PosController extends Controller
         'employee_id'                 => ['nullable', 'integer'],
         'userId'                      => ['required', 'integer'],
         'orderId'                     => ['required', 'string'],
-        'paymentMethod'               => ['required', 'in:cash,card'],
+        'paymentMethod'               => ['required', 'in:cash,card,pickme,uber'],
         'order_type'                  => ['nullable', 'in:takeaway,pickup'],
 
         'order_source'                => ['nullable', 'integer'],
@@ -244,7 +244,14 @@ class PosController extends Controller
 
     // ---- Owner discount
     $ownerId   = $data['owner_id'] ?? null;
+    $orderSource = $data['order_source'] ?? null;
     $ownerDisc = (float) ($data['owner_discount_value'] ?? 0);
+    
+    // Platform orders (PickMe/Uber) cannot use owner discount
+    if (($orderSource === 0 || $orderSource === '0' || $orderSource === 1 || $orderSource === '1') && $ownerDisc > 0) {
+        $ownerDisc = 0;
+        $ownerId = null;
+    }
 
     // ---- Final discount
     $totalDiscount = min(
@@ -311,6 +318,26 @@ class PosController extends Controller
             }
         }
 
+        // ---- Determine final payment method based on order source and payment method
+        $finalPaymentMethod = $data['paymentMethod'];
+        $orderSource = $data['order_source'] ?? null;
+        
+        // If order source is PickMe (0) or Uber (1), use the platform as payment method
+        if ($orderSource === 0 || $orderSource === '0') {
+            $finalPaymentMethod = 'pickme';
+        } elseif ($orderSource === 1 || $orderSource === '1') {
+            $finalPaymentMethod = 'uber';
+        } else {
+            // For non-platform orders, owner discount is not allowed with payment method
+            // Validate that cash/card payment is used
+            if (!in_array($finalPaymentMethod, ['cash', 'card'])) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Invalid payment method for direct orders. Use cash or card.',
+                ], 422);
+            }
+        }
+
         // ---- Sale record
         $sale = Sale::create([
             'customer_id'          => $customer?->id,
@@ -335,7 +362,7 @@ class PosController extends Controller
 
             'total_cost'           => $totalCost,
             'grand_total'          => $grandTotal,
-            'payment_method'       => $data['paymentMethod'],
+            'payment_method'       => $finalPaymentMethod,
             'sale_date'            => now()->toDateString(),
             'cash'                 => $request->input('cash'),
 

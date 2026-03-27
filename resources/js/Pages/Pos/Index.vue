@@ -460,10 +460,13 @@
 
             <!-- Owner Discount -->
             <div class="w-full my-5">
-              <div class="flex flex-col gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm">
+              <div :class="[ 'flex flex-col gap-4 p-5 border border-gray-200 rounded-2xl bg-white shadow-sm', isPaymentMethodDisabled ? 'opacity-50 pointer-events-none' : '', ]">
                 <div class="flex items-center justify-between">
                   <h3 class="text-lg font-semibold text-gray-900">Owner Discount</h3>
-                  <span v-if="ownerDiscountApplied"
+                  <span v-if="isPaymentMethodDisabled" class="inline-flex items-center text-xs font-medium text-orange-700 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">
+                    <i class="ri-lock-line mr-1"></i> Not Available (Platform Order)
+                  </span>
+                  <span v-else-if="ownerDiscountApplied"
                     class="inline-flex items-center text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
                     <i class="ri-check-line mr-1"></i> Applied
                   </span>
@@ -623,18 +626,27 @@
     <p class="text-xl font-semibold text-black">Payment Method :</p>
 
     <!-- Cash -->
-   <div @click="selectedPaymentMethod = 'cash'" :class="[ 'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center', selectedPaymentMethod === 'cash' ? 'bg-yellow-500 font-bold' : 'text-black', ]">
-
-
-
+   <div v-if="!isPaymentMethodDisabled" @click="selectedPaymentMethod = 'cash'" :class="[ 'w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center cursor-pointer', selectedPaymentMethod === 'cash' ? 'bg-yellow-500 font-bold' : 'text-black', ]">
       <img src="/images/money-stack.png" class="w-20" />
       <span class="mt-2 font-semibold">Cash</span>
     </div>
 
     <!-- Card -->
-   <div @click="selectedPaymentMethod = 'card'" :class="[ 'cursor-pointer w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center', selectedPaymentMethod === 'card' ? 'bg-yellow-500 font-bold' : 'text-black', ]">
+   <div v-if="!isPaymentMethodDisabled" @click="selectedPaymentMethod = 'card'" :class="[ 'w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center cursor-pointer', selectedPaymentMethod === 'card' ? 'bg-yellow-500 font-bold' : 'text-black', ]">
       <img src="/images/bank-card.png" class="w-20" />
       <span class="mt-2 font-semibold">Card</span>
+    </div>
+
+    <!-- PickMe (Platform) -->
+    <div v-if="selectedPaymentMethod === 'pickme'" :class="[ 'w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center bg-yellow-500 font-bold', ]">
+      <i class="ri-taxi-2-line text-4xl text-black"></i>
+      <span class="mt-2 font-semibold text-sm">PickMe</span>
+    </div>
+
+    <!-- Uber (Platform) -->
+    <div v-if="selectedPaymentMethod === 'uber'" :class="[ 'w-[100px] border border-black rounded-xl flex flex-col justify-center items-center text-center bg-yellow-500 font-bold', ]">
+      <i class="ri-taxi-line text-4xl text-black"></i>
+      <span class="mt-2 font-semibold text-sm">Uber</span>
     </div>
 
   </div>
@@ -976,6 +988,53 @@ const resetOwnerState = () => {
 const ownerDiscountValue = computed(() => ownerDiscountApplied.value ? Number(ownerFetch.value.override_amount || 0) : 0);
 
 /* =========================
+   PAYMENT METHOD DISABILITY
+========================= */
+// Check if payment methods should be disabled based on order source
+const isPaymentMethodDisabled = computed(() => {
+  if (!selectedTable.value) return false;
+  const source = selectedTable.value.order_source;
+  // Disable if PickMe (0) or Uber (1) is selected
+  return source === 0 || source === '0' || source === 1 || source === '1';
+});
+
+// Compute the auto-set payment method based on order source
+const autoPaymentMethod = computed(() => {
+  if (!selectedTable.value) return '';
+  const source = selectedTable.value.order_source;
+  if (source === 0 || source === '0') return 'pickme';
+  if (source === 1 || source === '1') return 'uber';
+  return '';
+});
+
+// Auto-update payment method and reset cash when order source changes
+watch(
+  () => autoPaymentMethod.value,
+  (newPaymentMethod) => {
+    if (newPaymentMethod) {
+      // Auto-set payment method to pickme or uber
+      selectedPaymentMethod.value = newPaymentMethod;
+      // Clear cash when switching to platform
+      if (selectedTable.value) {
+        selectedTable.value.cash = 0;
+      }
+      // Reset owner discount for platform orders
+      resetOwnerState();
+    }
+  }
+);
+
+// Also auto-reset payment method if it becomes disabled (backward compat)
+watch(
+  () => isPaymentMethodDisabled.value,
+  (disabled) => {
+    if (disabled && (selectedPaymentMethod.value === 'cash' || selectedPaymentMethod.value === 'card')) {
+      // Already handled by autoPaymentMethod watcher, but keep as safety net
+    }
+  }
+);
+
+/* =========================
    POS / USER
 ========================= */
 const discount = ref(0);
@@ -1186,10 +1245,26 @@ const buildOrderPayload = () => ({
 
 const submitOrder = async () => {
   if (isOrderSubmitting.value) return;
+  
+  // Validate that payment method is selected (for direct orders)
+  if (!isPaymentMethodDisabled.value && !selectedPaymentMethod.value) {
+    isAlertModalOpen.value = true;
+    message.value = "Please select a payment method.";
+    return;
+  }
+  
+  // For platform orders, payment method is auto-set, no validation needed
+  
   if (!total.value || parseFloat(total.value) <= 0) {
     isAlertModalOpen.value = true; message.value = "Total amount cannot be zero or less. Please check the bill."; return;
   }
-  if (balance.value < 0) { isAlertModalOpen.value = true; message.value = "Cash is not enough"; return; }
+  
+  // For cash payment, validate balance
+  if (selectedPaymentMethod.value === 'cash' && balance.value < 0) { 
+    isAlertModalOpen.value = true; 
+    message.value = "Cash is not enough"; 
+    return; 
+  }
 
   // Prevent duplicate submission
   if (isOrderSubmitted.value) {
